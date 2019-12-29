@@ -93,9 +93,4 @@ public class NotesUI extends JFrame {
     }
     //endregion
 
-    //region interval recording
-    //todo extract, rework with lamdas
-
 }
-//endregion
-
