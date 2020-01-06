@@ -15,5 +15,4 @@ target
 log
 *patch
 
-credentials.json
 notesdata.*

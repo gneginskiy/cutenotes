@@ -1,7 +1,6 @@
 package util;
 
 import controller.NotesDataManager;
-
 import java.util.function.Supplier;
 
 public class IntervalRecorder extends Thread {
@@ -19,16 +18,20 @@ public class IntervalRecorder extends Thread {
     public void run() {
         String recentText = "";
         while (true) {
-            waittt(DELAY_MILLIS);
+            _wait();
 
             if (!recentText.equals(textSupplier.get())) {
                 recentText = textSupplier.get();
-                notesDataManager.updateEverywhere(recentText.replace("\r\n","\n"));
+                notesDataManager.updateEverywhere(recentText.replace("\r\n", "\n"));
             }
         }
     }
 
-    private void waittt(long millis) {
-        try { Thread.sleep(millis); } catch (Exception ignored) { }
+    private void _wait() {
+        try {
+            Thread.sleep(IntervalRecorder.DELAY_MILLIS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
