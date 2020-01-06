@@ -12,7 +12,6 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,8 +40,9 @@ public class DriveQuickstart {
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
             DATA_STORE_FACTORY = new FileDataStoreFactory(CREDENTIALS_FOLDER);
             driveService = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials())
-                    .setApplicationName(APPLICATION_NAME)
-                    .build();
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+            System.out.println("Google API сработало, авторизация прошла успешно");
         } catch (Throwable t) {
             t.printStackTrace();
             System.exit(1);
@@ -64,7 +64,7 @@ public class DriveQuickstart {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
-   public static Drive getDriveService(String filename) {
+    public static Drive getDriveService() {
         return driveService;
     }
 }

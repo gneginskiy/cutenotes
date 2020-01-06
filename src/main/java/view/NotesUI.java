@@ -1,8 +1,6 @@
 package view;
 
 import controller.NotesDataManager;
-import util.IntervalRecorder;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -21,6 +19,7 @@ import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
 import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
+import util.IntervalRecorder;
 
 public class NotesUI extends JFrame {
 
@@ -70,10 +69,10 @@ public class NotesUI extends JFrame {
         document.addUndoableEditListener(event -> undoManager.addEdit(event.getEdit()));
         InputMap inputMap = area.getInputMap();
         ActionMap actionMap = area.getActionMap();
-        inputMap.put(KeyStroke.getKeyStroke(90, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()),
-                "Undo");
-        inputMap.put(KeyStroke.getKeyStroke(89, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()),
-                "Redo");
+        inputMap.put(KeyStroke.getKeyStroke(90, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()),
+            "Undo");
+        inputMap.put(KeyStroke.getKeyStroke(89, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()),
+            "Redo");
         actionMap.put("Undo", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
@@ -92,5 +91,4 @@ public class NotesUI extends JFrame {
         });
     }
     //endregion
-
 }

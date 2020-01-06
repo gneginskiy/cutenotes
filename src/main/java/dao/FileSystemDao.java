@@ -1,14 +1,13 @@
 package dao;
 
 import com.google.common.io.Files;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.time.Instant;
+import org.jetbrains.annotations.NotNull;
 
 
 public class FileSystemDao implements NotesDataDao {
@@ -22,24 +21,31 @@ public class FileSystemDao implements NotesDataDao {
     @Override
     public void create(@NotNull String filename, @NotNull String content) {
         if (!file.exists()) {
-            try { file.createNewFile(); } catch (Exception ignored) { ; }
+            try {
+                file.createNewFile();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             update(filename, content);
         }
     }
 
     @Override
     public void update(@NotNull String filename, @NotNull String content) {
-        System.out.println(Instant.now() + " updated at: "+this.getClass()+", filename "+filename+" , content >> "+content+" |");
+        System.out.println(Instant.now() + " updated at: " + this.getClass() +
+            ", filename " + filename + " , content >> " + content + " |");
 
-        try(BufferedWriter bufferedWriter = Files.newWriter(file, Charset.defaultCharset())){
+        try (BufferedWriter bufferedWriter = Files.newWriter(file, Charset.defaultCharset())) {
             bufferedWriter.write(content);
             bufferedWriter.flush();
-        } catch (Exception ignored) { ; }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void delete(@NotNull String filename) {
-        file.delete();
+    public boolean delete(@NotNull String filename) {
+        return file.delete();
     }
 
     @NotNull
@@ -53,7 +59,7 @@ public class FileSystemDao implements NotesDataDao {
             }
             String content = sb.toString();
 
-            System.out.println(Instant.now() + " read at: "+this.getClass()+" content >> "+content+" |");
+            System.out.println(Instant.now() + " read at: " + this.getClass() + " content >> " + content + " |");
             return content;
         } catch (Exception rethrown) {
             throw new RuntimeException(rethrown);

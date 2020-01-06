@@ -1,7 +1,6 @@
 package controller;
 
 import dao.NotesDataDao;
-
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -19,13 +18,15 @@ public class NotesDataManager { //todo extract to interface
     public void actualizeVersions() {
         String lastVersionContent = getLastVersion();
         storageAccessors.forEach(s -> updateEverywhere(lastVersionContent));
-        System.out.println(Instant.now() + " actualized");
+        System.out.println(Instant.now() + " actualizeVersions");
     }
 
     public void updateEverywhere(String text) {
-        storageAccessors.forEach(s -> s.update(filename, text));
-
-        System.out.println(Instant.now() + " updated everywhere: "+text);
+        storageAccessors.forEach(s -> {
+                s.update(filename, text);
+                System.out.println(Instant.now() + "(updateEverywhere) updated " + s.getClass().getName());
+            }
+        );
     }
 
     public String getLastVersion() {
