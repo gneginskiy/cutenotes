@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+
+<input type="button" value="clickme" id="MyButton">
+<body>
+
+<p>
+<textarea id="w3review" name="w3review" rows="40" cols="50">
+</textarea>
+</body>
+<head>
+    <script>
+        document.getElementById('MyButton').onclick = function () {
+            var lines = document.getElementById('w3review').value.split('\n');
+            for (var i = 0; i < lines.length; i++) {
+                var linkForDownload = lines[i];
+                var win = window.open(linkForDownload, '_blank');
+                win.focus();
+            }
+            // location.href = 'http://foo.exaple.com/bar/' + document.getElementById('meow').value + '.zip';
+        };
+    </script>
+</head>
+
+
+</html>
