@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Puppy Crawl//DTD Check Configuration 1.1//EN"
+    "http://www.puppycrawl.com/dtds/configuration_1_1.dtd">
+
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+
+    <!-- Exclude MapStruct generated sources from checkstyle -->
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*[\\/]target[\\/]generated-sources[\\/].*$"/>
+    </module>
+
+    <!-- Allow suppression comments for Checker-level modules -->
+    <module name="SuppressWithPlainTextCommentFilter">
+        <property name="offCommentFormat" value="SUPPRESS CHECKSTYLE FileLength"/>
+        <property name="onCommentFormat" value="RESUME CHECKSTYLE FileLength"/>
+        <property name="checkFormat" value="FileLength"/>
+    </module>
+
+    <module name="FileLength">
+        <property name="max" value="150"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+
+    <module name="TreeWalker">
+        <module name="SuppressionCommentFilter">
+            <property name="offCommentFormat" value="CHECKSTYLE:OFF"/>
+            <property name="onCommentFormat" value="CHECKSTYLE:ON"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="8"/>
+        </module>
+        <module name="ClassDataAbstractionCoupling">
+            <property name="max" value="10"/>
+        </module>
+        <module name="BooleanExpressionComplexity">
+            <property name="max" value="5"/>
+        </module>
+        <module name="NPathComplexity">
+            <property name="max" value="200"/>
+        </module>
+        <module name="CyclomaticComplexity">
+            <property name="max" value="15"/>
+        </module>
+        <module name="ClassFanOutComplexity">
+            <property name="max" value="20"/>
+        </module>
+        <module name="MethodCount">
+            <property name="maxPublic" value="15"/>
+        </module>
+        <module name="MethodLength">
+            <property name="tokens" value="METHOD_DEF"/>
+            <property name="max" value="30"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="StringLiteralEquality"/>
+    </module>
+
+</module>
