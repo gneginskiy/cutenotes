@@ -59,3 +59,9 @@ mvn clean install
 
 Output: `target/cutenotes.jar`.
 
+## License
+
+MIT — see [LICENSE](LICENSE). Free to copy, modify, and redistribute; the copyright notice and license text must be kept in any copies or substantial portions.
+
+Author: **Grigorii Neginskii**.
+
