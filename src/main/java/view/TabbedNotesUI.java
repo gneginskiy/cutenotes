@@ -59,7 +59,7 @@ public class TabbedNotesUI extends JFrame {
   private JMenuBar buildMenu() {
     int mask = ShortcutMask.menu();
     JMenuBar bar = new ThemedMenuBar();
-    JMenu menu = new ThemedMenu("Tabs");
+    JMenu menu = new ThemedMenu("Menu");
     menu.add(
         item("New tab", ks(KeyEvent.VK_T, mask), () -> tabs.openTab(repo.newId(), "untitled", "")));
     menu.add(
