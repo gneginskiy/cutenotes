@@ -126,7 +126,7 @@ public class TabsPane {
 
   public void applyTheme(Theme t) {
     TabsOps.applyTheme(t, defaultArea, stateById);
-    header.applyTheme(t.bg());
+    header.applyTheme(t.bg(), t.fg());
   }
 
   private void select(String id) {

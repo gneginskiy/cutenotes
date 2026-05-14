@@ -49,6 +49,10 @@ class SearchBar extends JPanel {
     Color fg = t.fg();
     setBackground(bg);
     setOpaque(true);
+    setBorder(
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.divider(t.bg())),
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
     input.setBackground(bg);
     input.setForeground(fg);
     input.setCaretColor(t.caret() != null ? t.caret() : Colors.inverse(bg));

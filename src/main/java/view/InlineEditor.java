@@ -23,6 +23,8 @@ final class InlineEditor {
     JTextField field = new JTextField(initial);
     field.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
     field.setBackground(TabHeader.ACTIVE);
+    field.setForeground(TabHeader.ACTIVE_FG);
+    field.setCaretColor(Colors.inverse(TabHeader.ACTIVE));
     field.setFont(field.getFont().deriveFont(Font.BOLD));
     field.selectAll();
     field.addActionListener(a -> onCommit.accept(field, field.getText()));

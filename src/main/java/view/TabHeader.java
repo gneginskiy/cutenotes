@@ -21,7 +21,8 @@ class TabHeader extends JPanel {
 
   static Color ACTIVE = new Color(250, 250, 180);
   static Color INACTIVE = new Color(235, 235, 165);
-  private static final Color INACTIVE_FG = new Color(110, 110, 90);
+  static Color ACTIVE_FG = Color.BLACK;
+  static Color INACTIVE_FG = new Color(110, 110, 90);
 
   private final Map<String, JLabel> labelsById = new HashMap<>();
   private final Consumer<String> onSelect;
@@ -63,16 +64,19 @@ class TabHeader extends JPanel {
         (i, l) -> {
           boolean sel = i.equals(id);
           l.setBackground(sel ? ACTIVE : INACTIVE);
-          l.setForeground(sel ? Color.BLACK : INACTIVE_FG);
+          l.setForeground(sel ? ACTIVE_FG : INACTIVE_FG);
           l.setFont(l.getFont().deriveFont(sel ? Font.BOLD : Font.PLAIN));
         });
     repaint();
   }
 
-  void applyTheme(Color bg) {
+  void applyTheme(Color bg, Color fg) {
     ACTIVE = bg;
-    INACTIVE = Colors.darken(bg, 18);
+    INACTIVE = Colors.contrast(bg, 0.12f);
+    ACTIVE_FG = fg;
+    INACTIVE_FG = Colors.blend(fg, INACTIVE, 0.35f);
     setBackground(INACTIVE);
+    setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.divider(bg)));
     selectTab(activeId);
   }
 
@@ -106,9 +110,6 @@ class TabHeader extends JPanel {
   }
 
   private void popup(MouseEvent e, String id, JLabel label) {
-    if (!e.isPopupTrigger()) {
-      return;
-    }
     JPopupMenu menu = new JPopupMenu();
     menu.add("Rename").addActionListener(a -> startEdit(id, label));
     menu.show(e.getComponent(), e.getX(), e.getY());
