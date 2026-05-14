@@ -3,6 +3,7 @@ package view;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 import javax.swing.AbstractAction;
@@ -17,9 +18,12 @@ final class LineOps {
 
   static void install(JTextArea area) {
     int mask = ShortcutMask.menu();
+    int shifted = mask | InputEvent.SHIFT_DOWN_MASK;
     bind(area, KeyEvent.VK_X, mask, LineOps::cutLine);
     bind(area, KeyEvent.VK_C, mask, LineOps::copyLine);
     bind(area, KeyEvent.VK_D, mask, LineOps::duplicateLine);
+    bind(area, KeyEvent.VK_UP, shifted, a -> moveLine(a, -1));
+    bind(area, KeyEvent.VK_DOWN, shifted, a -> moveLine(a, 1));
   }
 
   private static void bind(JTextArea area, int key, int mod, Consumer<JTextArea> action) {
@@ -69,5 +73,30 @@ final class LineOps {
     boolean noNl = !lineText.endsWith("\n");
     area.insert(noNl ? "\n" + lineText : lineText, end);
     area.setCaretPosition(end + (noNl ? 1 : 0) + col);
+  }
+
+  @SneakyThrows
+  private static void moveLine(JTextArea area, int direction) {
+    int caret = area.getCaretPosition();
+    int currLine = area.getLineOfOffset(caret);
+    int otherLine = currLine + direction;
+    if (otherLine < 0 || otherLine >= area.getLineCount()) {
+      return;
+    }
+    int topLine = Math.min(currLine, otherLine);
+    int bottomLine = Math.max(currLine, otherLine);
+    int topStart = area.getLineStartOffset(topLine);
+    int topEnd = area.getLineEndOffset(topLine);
+    int bottomEnd = area.getLineEndOffset(bottomLine);
+    String topText = area.getText(topStart, topEnd - topStart);
+    String bottomText = area.getText(topEnd, bottomEnd - topEnd);
+    if (!bottomText.endsWith("\n")) {
+      bottomText = bottomText + "\n";
+      topText = topText.substring(0, topText.length() - 1);
+    }
+    int col = caret - area.getLineStartOffset(currLine);
+    area.replaceRange(bottomText + topText, topStart, bottomEnd);
+    int newStart = direction == -1 ? topStart : topStart + bottomText.length();
+    area.setCaretPosition(newStart + col);
   }
 }

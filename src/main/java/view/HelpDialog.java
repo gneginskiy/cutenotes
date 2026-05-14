@@ -86,7 +86,8 @@ class HelpDialog extends JDialog {
       {"Cut line", cmd + "+X"},
       {"Copy line", cmd + "+C"},
       {"Duplicate line", cmd + "+D"},
-      {"Undo / Redo", cmd + "+Z  /  " + cmd + "+Y"}
+      {"Move line up / down", cmd + "+Shift+\u2191  /  " + cmd + "+Shift+\u2193"},
+      {"Undo / Redo", cmd + "+Z  /  " + cmd + "+Shift+Z"}
     };
   }
 
