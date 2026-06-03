@@ -27,8 +27,7 @@ Stores everything in plain text. Customizable colors, fonts, and other settings.
 Install Java 21+, download the release jar below, double-click on it.
 
 ## Download
-
-[cutenotes-2026-05-15.jar](releases/cutenotes-2026-05-15.jar) - latest release (tabs, theming, redo, etc.)
+[cutenotes-2026-06-03.jar](releases/cutenotes-2026-06-03.jar) - latest release (tabs, theming, redo, etc.)
 
 ## How it works
 
@@ -58,6 +57,13 @@ mvn clean install
 ```
 
 Output: `target/cutenotes.jar`.
+
+# Release notes
+2026-Jun-03:
+- Case-insensitive search (toggle for case-sensitive)
+- Forward / backward buttons in the search bar
+- Note groups (folders) in the `Cmd/Ctrl+R` window
+- `Cmd/Ctrl+Enter` inserts 10 blank lines
 
 ## License
 

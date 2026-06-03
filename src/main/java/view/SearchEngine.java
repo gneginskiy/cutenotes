@@ -2,6 +2,7 @@ package view;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.JTextArea;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Highlighter;
@@ -11,13 +12,19 @@ final class SearchEngine {
   private SearchEngine() {}
 
   static List<int[]> findAll(String text, String query) {
+    return findAll(text, query, false);
+  }
+
+  static List<int[]> findAll(String text, String query, boolean caseSensitive) {
     List<int[]> result = new ArrayList<>();
     if (query.isEmpty() || text.isEmpty()) {
       return result;
     }
+    String haystack = caseSensitive ? text : text.toLowerCase(Locale.ROOT);
+    String needle = caseSensitive ? query : query.toLowerCase(Locale.ROOT);
     int from = 0;
     while (true) {
-      int idx = text.indexOf(query, from);
+      int idx = haystack.indexOf(needle, from);
       if (idx < 0) {
         break;
       }

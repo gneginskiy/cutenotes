@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -23,7 +22,8 @@ class SearchBar extends JPanel {
   private static final Color ACTIVE = new Color(255, 150, 0, 220);
 
   private final JTextField input = new JTextField();
-  private final JLabel counter = new JLabel();
+  private final SearchControls controls =
+      new SearchControls(() -> step(-1), () -> step(1), this::runSearch, this::close);
   private final Supplier<JTextArea> areaSupplier;
   private final List<int[]> matches = new ArrayList<>();
   private final Highlighter.HighlightPainter matchPainter =
@@ -36,9 +36,8 @@ class SearchBar extends JPanel {
     super(new BorderLayout());
     this.areaSupplier = areaSupplier;
     setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-    counter.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
     add(input, BorderLayout.CENTER);
-    add(counter, BorderLayout.EAST);
+    add(controls, BorderLayout.EAST);
     setVisible(false);
     applyTheme(ThemeHolder.current());
     wireInput();
@@ -56,7 +55,7 @@ class SearchBar extends JPanel {
     input.setBackground(bg);
     input.setForeground(fg);
     input.setCaretColor(t.caret() != null ? t.caret() : Colors.inverse(bg));
-    counter.setForeground(fg);
+    controls.applyForeground(fg);
   }
 
   private void wireInput() {
@@ -107,7 +106,9 @@ class SearchBar extends JPanel {
   private void runSearch() {
     JTextArea area = areaSupplier.get();
     matches.clear();
-    matches.addAll(SearchEngine.findAll(area == null ? "" : area.getText(), input.getText()));
+    matches.addAll(
+        SearchEngine.findAll(
+            area == null ? "" : area.getText(), input.getText(), controls.isCaseSensitive()));
     activeIdx = matches.isEmpty() ? -1 : 0;
     SearchEngine.highlight(area, matches, activeIdx, matchPainter, activePainter);
     updateCounter();
@@ -126,9 +127,9 @@ class SearchBar extends JPanel {
 
   private void updateCounter() {
     if (matches.isEmpty()) {
-      counter.setText(input.getText().isEmpty() ? "" : "no matches");
+      controls.setCounterText(input.getText().isEmpty() ? "" : "no matches");
     } else {
-      counter.setText((activeIdx + 1) + " of " + matches.size());
+      controls.setCounterText((activeIdx + 1) + " of " + matches.size());
     }
   }
 

@@ -73,7 +73,7 @@ class HelpDialog extends JDialog {
       {"New tab", cmd + "+T"},
       {"Close tab", cmd + "+W"},
       {"Reopen last closed", cmd + "+Shift+T"},
-      {"Reopen closed tab\u2026", cmd + "+R"},
+      {"Browse notes & groups\u2026", cmd + "+R"},
       {"Next tab", alt + "+Tab"},
       {"Rename tab", "Double-click or right-click"}
     };
@@ -81,8 +81,9 @@ class HelpDialog extends JDialog {
 
   private static String[][] editingRows(String cmd) {
     return new String[][] {
-      {"Find in current tab", cmd + "+F"},
-      {"Next / previous match", "Enter / Shift+Enter"},
+      {"Find in current tab (case-insensitive)", cmd + "+F"},
+      {"Next / previous match", "Enter / Shift+Enter  (or \u2193 / \u2191)"},
+      {"Insert 10 blank lines", cmd + "+Enter"},
       {"Cut line", cmd + "+X"},
       {"Copy line", cmd + "+C"},
       {"Duplicate line", cmd + "+D"},

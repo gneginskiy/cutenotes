@@ -14,6 +14,8 @@ import lombok.SneakyThrows;
 
 final class LineOps {
 
+  private static final int BLANK_LINES = 10;
+
   private LineOps() {}
 
   static void install(JTextArea area) {
@@ -22,6 +24,7 @@ final class LineOps {
     bind(area, KeyEvent.VK_X, mask, LineOps::cutLine);
     bind(area, KeyEvent.VK_C, mask, LineOps::copyLine);
     bind(area, KeyEvent.VK_D, mask, LineOps::duplicateLine);
+    bind(area, KeyEvent.VK_ENTER, mask, LineOps::insertBlankLines);
     bind(area, KeyEvent.VK_UP, shifted, a -> moveLine(a, -1));
     bind(area, KeyEvent.VK_DOWN, shifted, a -> moveLine(a, 1));
   }
@@ -60,6 +63,12 @@ final class LineOps {
     int end = area.getLineEndOffset(line);
     String text = area.getText(start, end - start);
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
+  }
+
+  private static void insertBlankLines(JTextArea area) {
+    int caret = area.getCaretPosition();
+    area.insert("\n".repeat(BLANK_LINES), caret);
+    area.setCaretPosition(caret + BLANK_LINES);
   }
 
   @SneakyThrows

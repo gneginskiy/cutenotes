@@ -3,8 +3,6 @@ package view;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -12,10 +10,10 @@ import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
 import javax.swing.WindowConstants;
 
+import dao.GroupStore;
 import dao.SessionStore;
 import dao.TabRepository;
 import model.Tab;
-import model.TabMeta;
 import model.Theme;
 import util.AutoSaver;
 
@@ -23,6 +21,7 @@ public class TabbedNotesUI extends JFrame {
 
   private final TabRepository repo;
   private final SessionStore sessions;
+  private final GroupStore groups;
   private final String defaultTitle;
   private final TabsPane tabs = new TabsPane();
   private final SearchBar searchBar = new SearchBar(tabs::activeArea);
@@ -30,11 +29,13 @@ public class TabbedNotesUI extends JFrame {
   private final Runnable smartReveal = () -> tabs.revealer().revealIf(!tabs.openIds().isEmpty());
   private final AutoSaver autoSaver;
 
-  public TabbedNotesUI(String defaultTitle, TabRepository repo, SessionStore sessions) {
+  public TabbedNotesUI(
+      String defaultTitle, TabRepository repo, SessionStore sessions, GroupStore groups) {
     super(defaultTitle);
     this.defaultTitle = defaultTitle;
     this.repo = repo;
     this.sessions = sessions;
+    this.groups = groups;
     this.autoSaver = new AutoSaver(tabs::snapshot, repo);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setSize(500, 400);
@@ -133,16 +134,7 @@ public class TabbedNotesUI extends JFrame {
   }
 
   private void reopenTab() {
-    Set<String> openNow = new HashSet<>(tabs.openIds());
-    List<TabMeta> closed =
-        repo.listMeta().stream()
-            .filter(m -> !openNow.contains(m.id()) && !TabsPane.DEFAULT_ID.equals(m.id()))
-            .toList();
-    if (closed.isEmpty()) {
-      return;
-    }
-    new ClosedTabsDialog(
-            this, closed, meta -> openExisting(meta.id()), meta -> repo.delete(meta.id()))
+    new NotesBrowserDialog(this, repo, groups, new HashSet<>(tabs.openIds()), this::openExisting)
         .setVisible(true);
   }
 }
