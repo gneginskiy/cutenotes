@@ -9,16 +9,18 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Immutable note-grouping state: a forest of {@link Group}s plus a note-id to group-id assignment.
- * Notes absent from {@code assignments} are ungrouped. Every mutator returns a fresh copy.
+ * Immutable note-grouping state: a forest of {@link Group}s, a note-id to group-id assignment, and
+ * an explicit display order of note ids. Notes absent from {@code assignments} are ungrouped; notes
+ * absent from {@code order} fall back to their natural (date) order. Every mutator returns a copy.
  */
-public record GroupData(List<Group> groups, Map<String, String> assignments) {
+public record GroupData(List<Group> groups, Map<String, String> assignments, List<String> order) {
 
-  public static final GroupData EMPTY = new GroupData(List.of(), Map.of());
+  public static final GroupData EMPTY = new GroupData(List.of(), Map.of(), List.of());
 
   public GroupData {
     groups = List.copyOf(groups);
     assignments = Map.copyOf(assignments);
+    order = List.copyOf(order);
   }
 
   public GroupData withGroup(String id, String name, String parentId) {
@@ -27,7 +29,7 @@ public record GroupData(List<Group> groups, Map<String, String> assignments) {
     }
     List<Group> next = new ArrayList<>(groups);
     next.add(new Group(id, name.trim(), parentId));
-    return new GroupData(next, assignments);
+    return new GroupData(next, assignments, order);
   }
 
   public GroupData renamed(String id, String name) {
@@ -58,7 +60,7 @@ public record GroupData(List<Group> groups, Map<String, String> assignments) {
     }
     Map<String, String> map = new LinkedHashMap<>(assignments);
     map.entrySet().removeIf(e -> doomed.contains(e.getValue()));
-    return new GroupData(next, map);
+    return new GroupData(next, map, order);
   }
 
   public GroupData assign(String noteId, String groupId) {
@@ -68,7 +70,11 @@ public record GroupData(List<Group> groups, Map<String, String> assignments) {
     } else {
       map.put(noteId, groupId);
     }
-    return new GroupData(groups, map);
+    return new GroupData(groups, map, order);
+  }
+
+  public GroupData withOrder(List<String> order) {
+    return new GroupData(groups, assignments, order);
   }
 
   public List<Group> childrenOf(String parentId) {
@@ -85,6 +91,11 @@ public record GroupData(List<Group> groups, Map<String, String> assignments) {
     return assignments.get(noteId);
   }
 
+  public int orderIndex(String noteId) {
+    int idx = order.indexOf(noteId);
+    return idx < 0 ? Integer.MAX_VALUE : idx;
+  }
+
   public Group find(String id) {
     for (Group g : groups) {
       if (g.id().equals(id)) {
@@ -99,7 +110,7 @@ public record GroupData(List<Group> groups, Map<String, String> assignments) {
     for (Group g : groups) {
       next.add(op.apply(g));
     }
-    return new GroupData(next, assignments);
+    return new GroupData(next, assignments, order);
   }
 
   private void collectSubtree(String id, Set<String> acc) {

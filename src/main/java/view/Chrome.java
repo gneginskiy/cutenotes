@@ -20,7 +20,8 @@ final class Chrome {
 
   private static void onEscape(Revealer menu, TabsPane tabs, SearchBar search) {
     Revealer tabsRev = tabs.revealer();
-    if (menu.isShown() || tabsRev.isShown() || search.isVisible()) {
+    boolean anyOpen = menu.isShown() || search.isVisible() || (tabsRev.isShown() && !tabs.pinned());
+    if (anyOpen) {
       menu.hide();
       tabsRev.hide();
       search.close();

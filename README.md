@@ -27,7 +27,7 @@ Stores everything in plain text. Customizable colors, fonts, and other settings.
 Install Java 21+, download the release jar below, double-click on it.
 
 ## Download
-[cutenotes-2026-06-03.jar](releases/cutenotes-2026-06-03.jar) - latest release (tabs, theming, redo, etc.)
+[cutenotes-2026-06-05.jar](releases/cutenotes-2026-06-05.jar) - the latest release
 
 ## How it works
 
@@ -48,6 +48,10 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 | Undo / Redo                 | `Cmd+Z` / `Cmd+Shift+Z`       | `Ctrl+Z` / `Ctrl+Shift+Z`       |
 | Cut / copy / duplicate line | `Cmd+X` / `Cmd+C` / `Cmd+D`   | `Ctrl+X` / `Ctrl+C` / `Ctrl+D`  |
 | Move line up / down         | `Cmd+Shift+↑` / `Cmd+Shift+↓` | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` |
+| Bold / Italic / Underline   | `Cmd+B` / `Cmd+I` / `Cmd+U`   | `Ctrl+B` / `Ctrl+I` / `Ctrl+U`  |
+| Strikethrough               | `Cmd+Shift+S`                 | `Ctrl+Shift+S`                  |
+| Code (monospace)            | `Cmd+Shift+C`                 | `Ctrl+Shift+C`                  |
+| Paste image                 | `Cmd+V`                       | `Ctrl+V`                        |
 | Toggle status bar / Help    | `Esc` / `F1`                  | `Esc` / `F1`                    |
 
 ## Build
@@ -59,6 +63,12 @@ mvn clean install
 Output: `target/cutenotes.jar`.
 
 # Release notes
+2026-Jun-05:
+- Rich text: **bold**, *italic*, underline, ~~strikethrough~~ and `code` (`Cmd/Ctrl+B/I/U`, `Cmd/Ctrl+Shift+S`, `Cmd/Ctrl+Shift+C`), stored as Markdown
+- Paste images from the clipboard (`Cmd/Ctrl+V`); saved in `cutenotes_data/images`, resize or remove via right-click, move by dragging
+- Nested groups in the `Cmd/Ctrl+R` window: drag notes/groups to regroup, reorder notes, rename inline, right-click menu, delete with confirmation
+- Pin button (📌) to keep the tabs bar visible
+
 2026-Jun-03:
 - Case-insensitive search (toggle for case-sensitive)
 - Forward / backward buttons in the search bar

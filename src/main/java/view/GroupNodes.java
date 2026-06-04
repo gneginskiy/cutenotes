@@ -1,5 +1,7 @@
 package view;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -46,13 +48,34 @@ final class GroupNodes {
       List<TabMeta> notes,
       Set<String> openIds,
       boolean showAll) {
+    List<TabMeta> inGroup = new ArrayList<>();
     for (TabMeta meta : notes) {
       if (!showAll && openIds.contains(meta.id())) {
         continue;
       }
       if (Objects.equals(data.groupOf(meta.id()), groupId)) {
-        node.add(new DefaultMutableTreeNode(meta, false));
+        inGroup.add(meta);
       }
+    }
+    inGroup.sort(Comparator.comparingInt(m -> data.orderIndex(m.id())));
+    for (TabMeta meta : inGroup) {
+      node.add(new DefaultMutableTreeNode(meta, false));
+    }
+  }
+
+  static List<String> noteOrder(DefaultMutableTreeNode root) {
+    List<String> ids = new ArrayList<>();
+    collectNotes(root, ids);
+    return ids;
+  }
+
+  private static void collectNotes(DefaultMutableTreeNode node, List<String> ids) {
+    for (int i = 0; i < node.getChildCount(); i++) {
+      DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+      if (child.getUserObject() instanceof TabMeta meta) {
+        ids.add(meta.id());
+      }
+      collectNotes(child, ids);
     }
   }
 

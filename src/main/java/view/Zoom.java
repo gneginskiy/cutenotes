@@ -32,7 +32,14 @@ final class Zoom {
     }
     options.applyTheme(
         new Theme(
-            t.bg(), t.fg(), t.caret(), t.fontFamily(), LEVELS[next], t.title(), t.alwaysOnTop()));
+            t.bg(),
+            t.fg(),
+            t.caret(),
+            t.codeColor(),
+            t.fontFamily(),
+            LEVELS[next],
+            t.title(),
+            t.alwaysOnTop()));
   }
 
   private static int nearestIndex(int size) {

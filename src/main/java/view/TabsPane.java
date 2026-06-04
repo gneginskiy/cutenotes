@@ -9,7 +9,6 @@ import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
 import model.Tab;
@@ -29,20 +28,15 @@ public class TabsPane {
       new TabHeader(this::select, (id, name) -> stateById.get(id).name = name, this::reorder);
   private final JScrollPane headerScroll = TabPanes.header(header);
   private final TabHistory history = new TabHistory();
-  private final JTextArea defaultArea = TextAreaFactory.create("");
+  private final NoteEditor defaultArea = new NoteEditor("");
   private final JScrollPane defaultPane = TabPanes.content(defaultArea);
-  private final Revealer tabsRevealer = new Revealer(headerScroll, root, header::isEditing);
+  private final TabStrip tabStrip = new TabStrip(headerScroll, root, header::isEditing);
   private String activeId;
 
   public TabsPane() {
     content.setLayout(cards);
     content.setBackground(ThemeHolder.current().bg());
-    headerScroll.addMouseWheelListener(
-        e -> {
-          var b = headerScroll.getHorizontalScrollBar();
-          b.setValue(b.getValue() + e.getUnitsToScroll() * b.getUnitIncrement());
-        });
-    root.add(headerScroll, BorderLayout.NORTH);
+    root.add(tabStrip.component(), BorderLayout.NORTH);
     inner.add(content, BorderLayout.CENTER);
     root.add(inner, BorderLayout.CENTER);
     content.add(defaultPane, DEFAULT_ID);
@@ -59,7 +53,11 @@ public class TabsPane {
   }
 
   public Revealer revealer() {
-    return tabsRevealer;
+    return tabStrip.revealer();
+  }
+
+  public boolean pinned() {
+    return tabStrip.pinned();
   }
 
   public List<String> openIds() {
@@ -67,7 +65,7 @@ public class TabsPane {
   }
 
   public void setDefaultContent(String text) {
-    defaultArea.setText(text.replace("\n", "\r\n"));
+    defaultArea.setMarkdown(text);
   }
 
   public List<Tab> snapshot() {
@@ -79,7 +77,7 @@ public class TabsPane {
       select(id);
       return;
     }
-    JTextArea area = TextAreaFactory.create(text.replace("\n", "\r\n"));
+    NoteEditor area = new NoteEditor(text);
     JScrollPane pane = TabPanes.content(area);
     content.add(pane, id);
     header.addTab(id, name);
@@ -106,7 +104,7 @@ public class TabsPane {
     } else {
       select(order.get(Math.max(0, idx - 1)));
     }
-    return new Tab(closing, s.name, s.area.getText().replace("\r\n", "\n"));
+    return new Tab(closing, s.name, s.area.markdown());
   }
 
   public String popLastClosed() {
@@ -119,7 +117,7 @@ public class TabsPane {
     }
   }
 
-  public JTextArea activeArea() {
+  public NoteEditor activeArea() {
     TabState s = stateById.get(activeId);
     return s == null ? defaultArea : s.area;
   }
@@ -127,6 +125,7 @@ public class TabsPane {
   public void applyTheme(Theme t) {
     TabsOps.applyTheme(t, defaultArea, stateById);
     header.applyTheme(t.bg(), t.fg());
+    tabStrip.applyTheme(t.bg(), t.fg());
   }
 
   private void select(String id) {
@@ -139,7 +138,7 @@ public class TabsPane {
     focusLater(stateById.get(id).area);
   }
 
-  private static void focusLater(JTextArea area) {
+  private static void focusLater(NoteEditor area) {
     SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(area::requestFocusInWindow));
   }
 

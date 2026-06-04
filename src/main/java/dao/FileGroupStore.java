@@ -22,6 +22,7 @@ public class FileGroupStore implements GroupStore {
   private static final String FILE_NAME = "cutenotes_groups.txt";
   private static final String GROUP = "G";
   private static final String NOTE = "N";
+  private static final String ORDER = "O";
   private static final String SEP = "\t";
 
   private final Path file;
@@ -42,15 +43,18 @@ public class FileGroupStore implements GroupStore {
     }
     List<Group> groups = new ArrayList<>();
     Map<String, String> assignments = new LinkedHashMap<>();
+    List<String> order = new ArrayList<>();
     for (String line : Files.readString(file, StandardCharsets.UTF_8).split("\\R")) {
       String[] parts = line.split(SEP, -1);
       if (parts.length >= 4 && GROUP.equals(parts[0])) {
         groups.add(new Group(parts[1], parts[3], parts[2].isEmpty() ? null : parts[2]));
       } else if (parts.length >= 3 && NOTE.equals(parts[0])) {
         assignments.put(parts[1], parts[2]);
+      } else if (parts.length >= 2 && ORDER.equals(parts[0])) {
+        order.add(parts[1]);
       }
     }
-    return new GroupData(groups, assignments);
+    return new GroupData(groups, assignments, order);
   }
 
   @Override
@@ -71,6 +75,9 @@ public class FileGroupStore implements GroupStore {
     for (Map.Entry<String, String> entry : data.assignments().entrySet()) {
       text.append(NOTE).append(SEP).append(entry.getKey()).append(SEP).append(entry.getValue());
       text.append('\n');
+    }
+    for (String noteId : data.order()) {
+      text.append(ORDER).append(SEP).append(noteId).append('\n');
     }
     Files.writeString(file, text.toString(), StandardCharsets.UTF_8);
   }

@@ -61,43 +61,12 @@ class HelpDialog extends JDialog {
     JPanel grid = new JPanel(new GridBagLayout());
     grid.setBorder(BorderFactory.createEmptyBorder(22, 28, 22, 28));
     addTitle(grid);
-    addSection(grid, "Tabs", tabsRows(cmd, alt));
-    addSection(grid, "Search & Editing", editingRows(cmd));
-    addSection(grid, "Display", displayRows(cmd));
+    addSection(grid, "Tabs", HelpRows.tabs(cmd, alt));
+    addSection(grid, "Search & Editing", HelpRows.editing(cmd));
+    addSection(grid, "Formatting", HelpRows.formatting(cmd));
+    addSection(grid, "Display", HelpRows.display(cmd));
     addSection(grid, "Help", new String[][] {{"Show this dialog", "F1"}});
     return grid;
-  }
-
-  private static String[][] tabsRows(String cmd, String alt) {
-    return new String[][] {
-      {"New tab", cmd + "+T"},
-      {"Close tab", cmd + "+W"},
-      {"Reopen last closed", cmd + "+Shift+T"},
-      {"Browse notes & groups\u2026", cmd + "+R"},
-      {"Next tab", alt + "+Tab"},
-      {"Rename tab", "Double-click or right-click"}
-    };
-  }
-
-  private static String[][] editingRows(String cmd) {
-    return new String[][] {
-      {"Find in current tab (case-insensitive)", cmd + "+F"},
-      {"Next / previous match", "Enter / Shift+Enter  (or \u2193 / \u2191)"},
-      {"Insert 10 blank lines", cmd + "+Enter"},
-      {"Cut line", cmd + "+X"},
-      {"Copy line", cmd + "+C"},
-      {"Duplicate line", cmd + "+D"},
-      {"Move line up / down", cmd + "+Shift+\u2191  /  " + cmd + "+Shift+\u2193"},
-      {"Undo / Redo", cmd + "+Z  /  " + cmd + "+Shift+Z"}
-    };
-  }
-
-  private static String[][] displayRows(String cmd) {
-    return new String[][] {
-      {"Zoom in / out", cmd + "+Shift+=  /  " + cmd + "+Shift+-"},
-      {"Toggle menu & tabs strip", "Esc"},
-      {"Options\u2026", cmd + "+O"}
-    };
   }
 
   private void addTitle(JPanel grid) {

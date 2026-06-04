@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import javax.swing.DropMode;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -40,8 +39,6 @@ class GroupTree extends JTree {
     setCellRenderer(renderer);
     setCellEditor(new GroupCellEditor(this, renderer));
     setEditable(true);
-    setDragEnabled(true);
-    setDropMode(DropMode.ON);
     rebuild();
   }
 
@@ -85,6 +82,18 @@ class GroupTree extends JTree {
       return group.id();
     }
     return target instanceof TabMeta meta ? data.groupOf(meta.id()) : null;
+  }
+
+  List<String> currentNoteOrder() {
+    return GroupNodes.noteOrder((DefaultMutableTreeNode) getModel().getRoot());
+  }
+
+  String dropBeforeNoteId(TreePath path) {
+    if (path == null) {
+      return null;
+    }
+    Object target = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+    return target instanceof TabMeta meta ? meta.id() : null;
   }
 
   void editGroup(String id) {

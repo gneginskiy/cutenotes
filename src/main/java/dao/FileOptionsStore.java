@@ -15,6 +15,7 @@ public class FileOptionsStore implements OptionsStore {
   private static final String BG = "backgroundColor";
   private static final String FG = "textColor";
   private static final String CARET = "caretColor";
+  private static final String CODE = "codeColor";
   private static final String FONT = "fontFamily";
   private static final String SIZE = "fontSize";
   private static final String TITLE = "windowTitle";
@@ -41,6 +42,7 @@ public class FileOptionsStore implements OptionsStore {
         parseColor(m.get(BG), Theme.DEFAULT.bg()),
         parseColor(m.get(FG), Theme.DEFAULT.fg()),
         m.containsKey(CARET) ? parseColor(m.get(CARET), null) : null,
+        parseColor(m.get(CODE), Theme.DEFAULT.codeColor()),
         m.getOrDefault(FONT, Theme.DEFAULT.fontFamily()),
         parseInt(m.get(SIZE), Theme.DEFAULT.fontSize()),
         m.get(TITLE),
@@ -56,6 +58,9 @@ public class FileOptionsStore implements OptionsStore {
     text.append(FG).append('=').append(toHex(t.fg())).append('\n');
     if (t.caret() != null) {
       text.append(CARET).append('=').append(toHex(t.caret())).append('\n');
+    }
+    if (t.codeColor() != null) {
+      text.append(CODE).append('=').append(toHex(t.codeColor())).append('\n');
     }
     text.append(FONT).append('=').append(t.fontFamily()).append('\n');
     text.append(SIZE).append('=').append(t.fontSize()).append('\n');

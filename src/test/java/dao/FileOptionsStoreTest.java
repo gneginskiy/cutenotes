@@ -27,6 +27,7 @@ class FileOptionsStoreTest {
             new Color(10, 20, 30),
             new Color(200, 210, 220),
             new Color(50, 60, 70),
+            new Color(80, 160, 120),
             "Serif",
             18,
             "My Notes",

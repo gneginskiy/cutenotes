@@ -8,23 +8,23 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 final class OptionsForm {
 
   record Actions(Runnable reset, Runnable cancel, Runnable ok) {}
 
-  record Colors(ColorField bg, ColorField fg, ColorField caret) {}
+  record Colors(ColorField bg, ColorField fg, ColorField caret, ColorField code) {}
 
   private OptionsForm() {}
 
   static JPanel build(
-      JTextArea preview,
+      JComponent preview,
       Colors colors,
       JColorChooser chooser,
       JComboBox<String> fontBox,
@@ -40,7 +40,7 @@ final class OptionsForm {
     return root;
   }
 
-  private static JPanel buildTop(JTextArea preview, Colors colors) {
+  private static JPanel buildTop(JComponent preview, Colors colors) {
     JPanel p = new JPanel();
     p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
     p.add(new JScrollPane(preview));
@@ -51,6 +51,8 @@ final class OptionsForm {
     row.add(colors.fg());
     row.add(Box.createHorizontalStrut(8));
     row.add(colors.caret());
+    row.add(Box.createHorizontalStrut(8));
+    row.add(colors.code());
     row.add(Box.createHorizontalGlue());
     p.add(row);
     return p;

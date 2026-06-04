@@ -1,6 +1,8 @@
 package view;
 
 import java.awt.Component;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.swing.JOptionPane;
@@ -64,8 +66,13 @@ class NoteGroupActions {
     }
   }
 
-  void moveNote(String noteId, String targetGroupId) {
-    apply(tree.data().assign(noteId, targetGroupId));
+  void placeNote(String noteId, String targetGroupId, String beforeNoteId) {
+    GroupData base = tree.data().assign(noteId, targetGroupId);
+    List<String> order = new ArrayList<>(tree.currentNoteOrder());
+    order.remove(noteId);
+    int index = beforeNoteId == null ? -1 : order.indexOf(beforeNoteId);
+    order.add(index < 0 ? order.size() : index, noteId);
+    apply(base.withOrder(order));
   }
 
   void moveGroup(String groupId, String targetParentId) {

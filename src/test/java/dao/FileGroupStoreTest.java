@@ -23,12 +23,13 @@ class FileGroupStoreTest {
   }
 
   @Test
-  void roundTripKeepsNestedGroupsAndAssignments(@TempDir Path tmp) {
+  void roundTripKeepsNestedGroupsAssignmentsAndOrder(@TempDir Path tmp) {
     FileGroupStore store = new FileGroupStore(tmp.resolve("g.txt"));
     GroupData data =
         new GroupData(
             List.of(new Group("g1", "Work", null), new Group("g2", "Projects", "g1")),
-            Map.of("note-1", "g2"));
+            Map.of("note-1", "g2"),
+            List.of("note-2", "note-1"));
 
     store.write(data);
     GroupData loaded = store.read();
@@ -37,13 +38,14 @@ class FileGroupStoreTest {
     assertNull(loaded.find("g1").parentId());
     assertEquals("g1", loaded.find("g2").parentId());
     assertEquals("g2", loaded.groupOf("note-1"));
+    assertEquals(List.of("note-2", "note-1"), loaded.order());
   }
 
   @Test
   void keepsEmptyGroupWithNoMembers(@TempDir Path tmp) {
     FileGroupStore store = new FileGroupStore(tmp.resolve("g.txt"));
 
-    store.write(new GroupData(List.of(new Group("g1", "Empty", null)), Map.of()));
+    store.write(new GroupData(List.of(new Group("g1", "Empty", null)), Map.of(), List.of()));
 
     GroupData loaded = store.read();
     assertEquals(1, loaded.groups().size());

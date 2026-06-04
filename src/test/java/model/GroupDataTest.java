@@ -90,6 +90,20 @@ class GroupDataTest {
   }
 
   @Test
+  void withOrderDrivesOrderIndex() {
+    GroupData d = GroupData.EMPTY.withOrder(List.of("c", "a", "b"));
+
+    assertEquals(List.of("c", "a", "b"), d.order());
+    assertEquals(0, d.orderIndex("c"));
+    assertEquals(2, d.orderIndex("b"));
+  }
+
+  @Test
+  void unorderedNoteReportsMaxIndex() {
+    assertEquals(Integer.MAX_VALUE, GroupData.EMPTY.orderIndex("ghost"));
+  }
+
+  @Test
   void immutableCopiesAreReturned() {
     GroupData base = GroupData.EMPTY.withGroup("g1", "Work", null);
     GroupData next = base.withGroup("g2", "Personal", null);

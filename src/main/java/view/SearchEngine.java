@@ -3,9 +3,9 @@ package view;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import javax.swing.JTextArea;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Highlighter;
+import javax.swing.text.JTextComponent;
 
 final class SearchEngine {
 
@@ -42,7 +42,7 @@ final class SearchEngine {
   }
 
   static void highlight(
-      JTextArea area,
+      JTextComponent area,
       List<int[]> matches,
       int activeIdx,
       Highlighter.HighlightPainter normal,
@@ -62,13 +62,13 @@ final class SearchEngine {
     }
   }
 
-  static void clear(JTextArea area) {
+  static void clear(JTextComponent area) {
     if (area != null) {
       area.getHighlighter().removeAllHighlights();
     }
   }
 
-  static void scrollTo(JTextArea area, int offset) {
+  static void scrollTo(JTextComponent area, int offset) {
     if (area == null) {
       return;
     }

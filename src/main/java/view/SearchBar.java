@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
+import javax.swing.text.JTextComponent;
 
 import model.Theme;
 
@@ -24,7 +24,7 @@ class SearchBar extends JPanel {
   private final JTextField input = new JTextField();
   private final SearchControls controls =
       new SearchControls(() -> step(-1), () -> step(1), this::runSearch, this::close);
-  private final Supplier<JTextArea> areaSupplier;
+  private final Supplier<JTextComponent> areaSupplier;
   private final List<int[]> matches = new ArrayList<>();
   private final Highlighter.HighlightPainter matchPainter =
       new DefaultHighlighter.DefaultHighlightPainter(MATCH);
@@ -32,7 +32,7 @@ class SearchBar extends JPanel {
       new DefaultHighlighter.DefaultHighlightPainter(ACTIVE);
   private int activeIdx = -1;
 
-  SearchBar(Supplier<JTextArea> areaSupplier) {
+  SearchBar(Supplier<JTextComponent> areaSupplier) {
     super(new BorderLayout());
     this.areaSupplier = areaSupplier;
     setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
@@ -83,7 +83,7 @@ class SearchBar extends JPanel {
     activeIdx = -1;
     setVisible(false);
     revalidate();
-    JTextArea area = areaSupplier.get();
+    JTextComponent area = areaSupplier.get();
     if (area != null) {
       area.requestFocusInWindow();
     }
@@ -104,7 +104,7 @@ class SearchBar extends JPanel {
   }
 
   private void runSearch() {
-    JTextArea area = areaSupplier.get();
+    JTextComponent area = areaSupplier.get();
     matches.clear();
     matches.addAll(
         SearchEngine.findAll(

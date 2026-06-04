@@ -38,7 +38,9 @@ class NotesBrowserDialog extends JDialog {
     this.tree = new GroupTree(notes, openIds, groups.read());
     this.actions = new NoteGroupActions(this, tree, groups, repo, onPick);
     tree.setOnRename(actions::rename);
-    tree.setTransferHandler(new GroupTransferHandler(tree, actions));
+    TreeReorder reorder = new TreeReorder(tree, actions);
+    tree.addMouseListener(reorder);
+    tree.addMouseMotionListener(reorder);
     wireTree();
     add(toolbar(), BorderLayout.NORTH);
     add(new JScrollPane(tree), BorderLayout.CENTER);
@@ -66,6 +68,10 @@ class NotesBrowserDialog extends JDialog {
         new MouseAdapter() {
           @Override
           public void mousePressed(MouseEvent e) {
+            int row = tree.getRowForLocation(e.getX(), e.getY());
+            if (row >= 0) {
+              tree.setSelectionRow(row);
+            }
             maybePopup(e);
           }
 

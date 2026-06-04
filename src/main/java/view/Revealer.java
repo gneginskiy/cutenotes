@@ -22,6 +22,7 @@ final class Revealer {
   private final BooleanSupplier keepOpen;
   private Timer animTimer;
   private boolean shown;
+  private boolean pinned;
 
   Revealer(JComponent target, JComponent layoutRoot) {
     this(target, layoutRoot, () -> false);
@@ -51,6 +52,20 @@ final class Revealer {
     return shown;
   }
 
+  boolean isPinned() {
+    return pinned;
+  }
+
+  void setPinned(boolean pin) {
+    this.pinned = pin;
+    if (pin) {
+      hideTimer.stop();
+      show();
+    } else {
+      hideTimer.restart();
+    }
+  }
+
   void reveal() {
     show();
     hideTimer.restart();
@@ -74,7 +89,7 @@ final class Revealer {
   }
 
   void hide() {
-    if (!shown) {
+    if (!shown || pinned) {
       return;
     }
     shown = false;

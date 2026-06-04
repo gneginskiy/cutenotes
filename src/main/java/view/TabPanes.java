@@ -4,7 +4,7 @@ import java.awt.Dimension;
 import javax.swing.BorderFactory;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.text.JTextComponent;
 
 final class TabPanes {
 
@@ -38,7 +38,7 @@ final class TabPanes {
     return pane;
   }
 
-  static JScrollPane content(JTextArea area) {
+  static JScrollPane content(JTextComponent area) {
     JScrollPane pane = new JScrollPane(area);
     pane.setBorder(BorderFactory.createEmptyBorder());
     pane.getViewport().setBackground(area.getBackground());

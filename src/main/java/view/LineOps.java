@@ -1,14 +1,15 @@
 package view;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.function.Consumer;
 import javax.swing.AbstractAction;
-import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
+import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.StyledDocument;
 
 import lombok.SneakyThrows;
 
@@ -18,18 +19,18 @@ final class LineOps {
 
   private LineOps() {}
 
-  static void install(JTextArea area) {
+  static void install(JTextComponent area) {
     int mask = ShortcutMask.menu();
     int shifted = mask | InputEvent.SHIFT_DOWN_MASK;
-    bind(area, KeyEvent.VK_X, mask, LineOps::cutLine);
-    bind(area, KeyEvent.VK_C, mask, LineOps::copyLine);
+    bind(area, KeyEvent.VK_X, mask, EditorClipboard::cutLine);
+    bind(area, KeyEvent.VK_C, mask, EditorClipboard::copyLine);
     bind(area, KeyEvent.VK_D, mask, LineOps::duplicateLine);
     bind(area, KeyEvent.VK_ENTER, mask, LineOps::insertBlankLines);
     bind(area, KeyEvent.VK_UP, shifted, a -> moveLine(a, -1));
     bind(area, KeyEvent.VK_DOWN, shifted, a -> moveLine(a, 1));
   }
 
-  private static void bind(JTextArea area, int key, int mod, Consumer<JTextArea> action) {
+  private static void bind(JTextComponent area, int key, int mod, Consumer<JTextComponent> action) {
     String name = "line-op-" + key;
     area.getInputMap().put(KeyStroke.getKeyStroke(key, mod), name);
     area.getActionMap()
@@ -44,68 +45,65 @@ final class LineOps {
   }
 
   @SneakyThrows
-  private static void cutLine(JTextArea area) {
-    if (area.getSelectedText() == null) {
-      int line = area.getLineOfOffset(area.getCaretPosition());
-      area.select(area.getLineStartOffset(line), area.getLineEndOffset(line));
-    }
-    area.cut();
-  }
-
-  @SneakyThrows
-  private static void copyLine(JTextArea area) {
-    if (area.getSelectedText() != null) {
-      area.copy();
-      return;
-    }
-    int line = area.getLineOfOffset(area.getCaretPosition());
-    int start = area.getLineStartOffset(line);
-    int end = area.getLineEndOffset(line);
-    String text = area.getText(start, end - start);
-    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
-  }
-
-  private static void insertBlankLines(JTextArea area) {
+  private static void insertBlankLines(JTextComponent area) {
     int caret = area.getCaretPosition();
-    area.insert("\n".repeat(BLANK_LINES), caret);
+    area.getDocument().insertString(caret, "\n".repeat(BLANK_LINES), null);
     area.setCaretPosition(caret + BLANK_LINES);
   }
 
   @SneakyThrows
-  private static void duplicateLine(JTextArea area) {
+  private static void duplicateLine(JTextComponent area) {
+    StyledDocument doc = (StyledDocument) area.getDocument();
+    String text = docText(area);
     int caret = area.getCaretPosition();
-    int line = area.getLineOfOffset(caret);
-    int start = area.getLineStartOffset(line);
-    int end = area.getLineEndOffset(line);
-    String lineText = area.getText(start, end - start);
+    int start = Lines.start(text, caret);
+    int end = Lines.endInclusive(text, caret);
     int col = caret - start;
-    boolean noNl = !lineText.endsWith("\n");
-    area.insert(noNl ? "\n" + lineText : lineText, end);
-    area.setCaretPosition(end + (noNl ? 1 : 0) + col);
+    boolean noNewline = !text.substring(start, end).endsWith("\n");
+    List<StyledRuns.Run> runs = StyledRuns.capture(doc, start, end);
+    int at = end;
+    if (noNewline) {
+      doc.insertString(end, "\n", null);
+      at = end + 1;
+    }
+    StyledRuns.insert(doc, at, runs);
+    area.setCaretPosition(at + col);
   }
 
   @SneakyThrows
-  private static void moveLine(JTextArea area, int direction) {
+  private static void moveLine(JTextComponent area, int direction) {
+    StyledDocument doc = (StyledDocument) area.getDocument();
+    String text = docText(area);
     int caret = area.getCaretPosition();
-    int currLine = area.getLineOfOffset(caret);
-    int otherLine = currLine + direction;
-    if (otherLine < 0 || otherLine >= area.getLineCount()) {
+    int current = Lines.index(text, caret);
+    int other = current + direction;
+    if (other < 0 || other >= Lines.count(text)) {
       return;
     }
-    int topLine = Math.min(currLine, otherLine);
-    int bottomLine = Math.max(currLine, otherLine);
-    int topStart = area.getLineStartOffset(topLine);
-    int topEnd = area.getLineEndOffset(topLine);
-    int bottomEnd = area.getLineEndOffset(bottomLine);
-    String topText = area.getText(topStart, topEnd - topStart);
-    String bottomText = area.getText(topEnd, bottomEnd - topEnd);
-    if (!bottomText.endsWith("\n")) {
-      bottomText = bottomText + "\n";
-      topText = topText.substring(0, topText.length() - 1);
+    int top = Math.min(current, other);
+    int topStart = Lines.startOffset(text, top);
+    int bottomStart = Lines.startOffset(text, Math.max(current, other));
+    int bottomEnd = Lines.endInclusive(text, bottomStart);
+    boolean bottomHasNewline = text.substring(bottomStart, bottomEnd).endsWith("\n");
+    List<StyledRuns.Run> topRuns = StyledRuns.capture(doc, topStart, bottomStart);
+    List<StyledRuns.Run> bottomRuns = StyledRuns.capture(doc, bottomStart, bottomEnd);
+    int col = caret - Lines.startOffset(text, current);
+    doc.remove(topStart, bottomEnd - topStart);
+    int pos = StyledRuns.insert(doc, topStart, bottomRuns);
+    if (!bottomHasNewline) {
+      doc.insertString(pos, "\n", null);
+      pos++;
+      topRuns = StyledRuns.trimTrailingNewline(topRuns);
     }
-    int col = caret - area.getLineStartOffset(currLine);
-    area.replaceRange(bottomText + topText, topStart, bottomEnd);
-    int newStart = direction == -1 ? topStart : topStart + bottomText.length();
-    area.setCaretPosition(newStart + col);
+    StyledRuns.insert(doc, pos, topRuns);
+    int firstBlock = (bottomEnd - bottomStart) + (bottomHasNewline ? 0 : 1);
+    int newStart = direction == -1 ? topStart : topStart + firstBlock;
+    area.setCaretPosition(Math.min(newStart + col, doc.getLength()));
+  }
+
+  @SneakyThrows
+  static String docText(JTextComponent area) {
+    Document doc = area.getDocument();
+    return doc.getText(0, doc.getLength());
   }
 }

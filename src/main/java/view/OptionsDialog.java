@@ -8,11 +8,14 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JSpinner;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyledDocument;
 
+import lombok.SneakyThrows;
 import model.Theme;
 
 class OptionsDialog extends JDialog {
@@ -22,7 +25,7 @@ class OptionsDialog extends JDialog {
   private final JSpinner sizeSpin = Spinners.intRange(12, 6, 72);
   private final JTextField titleField = new JTextField();
   private final JCheckBox alwaysOnTopBox = new JCheckBox("Always on top", true);
-  private final JTextArea preview = new JTextArea("Preview\nThe quick brown fox\n123 456 789");
+  private final JTextPane preview = new JTextPane();
   private final ColorPalette palette = new ColorPalette(chooser, this::updatePreview);
   private final Consumer<Theme> onApply;
 
@@ -32,13 +35,13 @@ class OptionsDialog extends JDialog {
     ColorChoosers.compact(chooser);
     preview.setEditable(false);
     preview.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-    preview.setRows(3);
     fontBox.addActionListener(e -> updatePreview());
     sizeSpin.addChangeListener(e -> updatePreview());
     setContentPane(
         OptionsForm.build(
             preview,
-            new OptionsForm.Colors(palette.bgField(), palette.fgField(), palette.caretField()),
+            new OptionsForm.Colors(
+                palette.bgField(), palette.fgField(), palette.caretField(), palette.codeField()),
             chooser,
             fontBox,
             sizeSpin,
@@ -53,7 +56,7 @@ class OptionsDialog extends JDialog {
   }
 
   void openFor(Theme current) {
-    palette.load(current.bg(), current.fg(), current.caret());
+    palette.load(current.bg(), current.fg(), current.caret(), current.codeColor());
     fontBox.setSelectedItem(FontFamilies.resolve(current.fontFamily()));
     sizeSpin.setValue(current.fontSize());
     titleField.setText(current.title() == null ? "" : current.title());
@@ -66,10 +69,16 @@ class OptionsDialog extends JDialog {
     setVisible(false);
   }
 
+  @SneakyThrows
   private void updatePreview() {
-    TextAreaFactory.applyTheme(preview, currentTheme());
-    preview.getCaret().setVisible(false);
-    preview.getCaret().setVisible(true);
+    Theme t = currentTheme();
+    EditorTheme.apply(preview, t);
+    StyledDocument doc = preview.getStyledDocument();
+    doc.remove(0, doc.getLength());
+    doc.insertString(0, "The quick brown fox\n", null);
+    SimpleAttributeSet code = new SimpleAttributeSet();
+    EditorFormat.styleCode(code, true, t);
+    doc.insertString(doc.getLength(), "code = 42;", code);
   }
 
   private Theme currentTheme() {
@@ -78,6 +87,7 @@ class OptionsDialog extends JDialog {
         palette.bg(),
         palette.fg(),
         palette.caret(),
+        palette.code(),
         (String) fontBox.getSelectedItem(),
         (Integer) sizeSpin.getValue(),
         title.isEmpty() ? null : title,
@@ -85,7 +95,8 @@ class OptionsDialog extends JDialog {
   }
 
   private void reset() {
-    palette.load(Theme.DEFAULT.bg(), Theme.DEFAULT.fg(), Theme.DEFAULT.caret());
+    palette.load(
+        Theme.DEFAULT.bg(), Theme.DEFAULT.fg(), Theme.DEFAULT.caret(), Theme.DEFAULT.codeColor());
     fontBox.setSelectedItem(FontFamilies.resolve(Theme.DEFAULT.fontFamily()));
     sizeSpin.setValue(Theme.DEFAULT.fontSize());
     titleField.setText("");
