@@ -18,10 +18,11 @@ final class HelpRows {
     };
   }
 
-  static String[][] editing(String cmd) {
+  static String[][] editing(String cmd, String alt) {
     return new String[][] {
       {"Find in current tab (case-insensitive)", cmd + "+F"},
       {"Next / previous match", "Enter / Shift+Enter  (or ↓ / ↑)"},
+      {"Back / forward to last spot", cmd + "+" + alt + "+←  /  " + cmd + "+" + alt + "+→"},
       {"Insert 10 blank lines", cmd + "+Enter"},
       {"Cut line", cmd + "+X"},
       {"Copy line", cmd + "+C"},

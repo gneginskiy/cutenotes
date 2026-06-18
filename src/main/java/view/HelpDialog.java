@@ -62,7 +62,7 @@ class HelpDialog extends JDialog {
     grid.setBorder(BorderFactory.createEmptyBorder(22, 28, 22, 28));
     addTitle(grid);
     addSection(grid, "Tabs", HelpRows.tabs(cmd, alt));
-    addSection(grid, "Search & Editing", HelpRows.editing(cmd));
+    addSection(grid, "Search & Editing", HelpRows.editing(cmd, alt));
     addSection(grid, "Formatting", HelpRows.formatting(cmd));
     addSection(grid, "Display", HelpRows.display(cmd));
     addSection(grid, "Help", new String[][] {{"Show this dialog", "F1"}});

@@ -1,5 +1,6 @@
 package util;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
@@ -66,6 +67,28 @@ class AutoSaverTest {
     saver.tick();
 
     assertEquals("new", repo.byId.get("a").name());
+  }
+
+  @Test
+  void tickSurvivesSupplierFailure() {
+    RecordingRepo repo = new RecordingRepo();
+    AtomicReference<List<Tab>> source = new AtomicReference<>(null);
+    AutoSaver saver =
+        new AutoSaver(
+            () -> {
+              List<Tab> tabs = source.get();
+              if (tabs == null) {
+                throw new IllegalStateException("document read race");
+              }
+              return tabs;
+            },
+            repo);
+
+    assertDoesNotThrow(saver::tick);
+
+    source.set(List.of(new Tab("a", "n", "recovered")));
+    saver.tick();
+    assertEquals("recovered", repo.byId.get("a").content());
   }
 
   @Test

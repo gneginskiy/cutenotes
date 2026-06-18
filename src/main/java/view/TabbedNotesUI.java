@@ -36,7 +36,7 @@ public class TabbedNotesUI extends JFrame {
     this.repo = repo;
     this.sessions = sessions;
     this.groups = groups;
-    this.autoSaver = new AutoSaver(tabs::snapshot, repo);
+    this.autoSaver = new AutoSaver(() -> EdtRead.onEdt(tabs::snapshot), repo);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setSize(500, 400);
     WindowPlacement.centerOnScreen(this);
@@ -54,7 +54,7 @@ public class TabbedNotesUI extends JFrame {
 
   private void persist() {
     autoSaver.flush();
-    sessions.write(TabCleanup.pruneEmpty(tabs.snapshot(), repo));
+    sessions.write(TabCleanup.pruneEmpty(EdtRead.onEdt(tabs::snapshot), repo));
   }
 
   private JMenuBar buildMenu() {
@@ -117,8 +117,13 @@ public class TabbedNotesUI extends JFrame {
 
   private void closeCurrentTab() {
     Tab closed = tabs.closeCurrent();
-    if (closed != null && closed.content().isBlank()) {
+    if (closed == null) {
+      return;
+    }
+    if (closed.content().isBlank()) {
       repo.delete(closed.id());
+    } else {
+      repo.save(closed.id(), closed.name(), closed.content());
     }
   }
 

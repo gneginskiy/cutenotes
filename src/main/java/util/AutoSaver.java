@@ -33,11 +33,15 @@ public class AutoSaver {
   }
 
   void tick() {
-    for (Tab tab : snapshotSupplier.get()) {
-      if (!tab.equals(lastSaved.get(tab.id()))) {
-        repo.save(tab.id(), tab.name(), tab.content());
-        lastSaved.put(tab.id(), tab);
+    try {
+      for (Tab tab : snapshotSupplier.get()) {
+        if (!tab.equals(lastSaved.get(tab.id()))) {
+          repo.save(tab.id(), tab.name(), tab.content());
+          lastSaved.put(tab.id(), tab);
+        }
       }
+    } catch (Exception e) {
+      // A transient failure (e.g. a document read race) must never kill the recurring task.
     }
   }
 }

@@ -48,6 +48,7 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 | Undo / Redo                 | `Cmd+Z` / `Cmd+Shift+Z`       | `Ctrl+Z` / `Ctrl+Shift+Z`       |
 | Cut / copy / duplicate line | `Cmd+X` / `Cmd+C` / `Cmd+D`   | `Ctrl+X` / `Ctrl+C` / `Ctrl+D`  |
 | Move line up / down         | `Cmd+Shift+↑` / `Cmd+Shift+↓` | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` |
+| Back / forward to last spot | `Cmd+Option+←` / `Cmd+Option+→` | `Ctrl+Alt+←` / `Ctrl+Alt+→`   |
 | Bold / Italic / Underline   | `Cmd+B` / `Cmd+I` / `Cmd+U`   | `Ctrl+B` / `Ctrl+I` / `Ctrl+U`  |
 | Strikethrough               | `Cmd+Shift+S`                 | `Ctrl+Shift+S`                  |
 | Code (monospace)            | `Cmd+Shift+C`                 | `Ctrl+Shift+C`                  |
@@ -64,6 +65,8 @@ Output: `target/cutenotes.jar`.
 
 # Release notes
 2026-Jun-05:
+- Back / forward caret navigation across visited spots (`Cmd/Ctrl+Alt+←/→`), like an IDE
+- Configurable code-section colour with an auto, theme-aware background
 - Rich text: **bold**, *italic*, underline, ~~strikethrough~~ and `code` (`Cmd/Ctrl+B/I/U`, `Cmd/Ctrl+Shift+S`, `Cmd/Ctrl+Shift+C`), stored as Markdown
 - Paste images from the clipboard (`Cmd/Ctrl+V`); saved in `cutenotes_data/images`, resize or remove via right-click, move by dragging
 - Nested groups in the `Cmd/Ctrl+R` window: drag notes/groups to regroup, reorder notes, rename inline, right-click menu, delete with confirmation

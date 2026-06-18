@@ -34,6 +34,7 @@ class NoteEditor extends JTextPane {
     EditorFormat.install(this);
     EditorImages.install(this);
     setMarkdown(markdown);
+    CaretHistory.install(this);
   }
 
   void applyTheme(Theme t) {

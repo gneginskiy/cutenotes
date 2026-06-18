@@ -1,0 +1,97 @@
+package view;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import javax.swing.AbstractAction;
+import javax.swing.KeyStroke;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.Position;
+
+import lombok.SneakyThrows;
+
+/**
+ * IntelliJ-style "back / forward to last edit location": records significant caret jumps and lets
+ * the caret hop between them with {@code Cmd/Ctrl+Alt+Left/Right}.
+ */
+final class CaretHistory {
+
+  private static final int JUMP = 40;
+
+  private final transient JTextComponent area;
+  private final transient Deque<Position> back = new ArrayDeque<>();
+  private final transient Deque<Position> forward = new ArrayDeque<>();
+  private int last;
+  private boolean navigating;
+
+  private CaretHistory(JTextComponent area) {
+    this.area = area;
+    area.addCaretListener(e -> onCaret(e.getDot()));
+  }
+
+  static void install(JTextComponent area) {
+    CaretHistory history = new CaretHistory(area);
+    int mod = ShortcutMask.menu() | InputEvent.ALT_DOWN_MASK;
+    bind(area, KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, mod), "nav-back", history::back);
+    bind(area, KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, mod), "nav-forward", history::forward);
+  }
+
+  private void onCaret(int dot) {
+    if (!navigating && Math.abs(dot - last) > JUMP) {
+      back.push(mark(last));
+      forward.clear();
+    }
+    last = dot;
+  }
+
+  private void back() {
+    if (!back.isEmpty()) {
+      forward.push(mark(area.getCaretPosition()));
+      go(back.pop());
+    }
+  }
+
+  private void forward() {
+    if (!forward.isEmpty()) {
+      back.push(mark(area.getCaretPosition()));
+      go(forward.pop());
+    }
+  }
+
+  @SneakyThrows
+  private void go(Position target) {
+    navigating = true;
+    int pos = clamp(target.getOffset());
+    area.setCaretPosition(pos);
+    var rect = area.modelToView2D(pos);
+    if (rect != null) {
+      area.scrollRectToVisible(rect.getBounds());
+    }
+    last = pos;
+    navigating = false;
+  }
+
+  @SneakyThrows
+  private Position mark(int offset) {
+    return area.getDocument().createPosition(clamp(offset));
+  }
+
+  private int clamp(int offset) {
+    return Math.max(0, Math.min(offset, area.getDocument().getLength()));
+  }
+
+  private static void bind(JTextComponent area, KeyStroke ks, String name, Runnable action) {
+    area.getInputMap().put(ks, name);
+    area.getActionMap()
+        .put(
+            name,
+            new AbstractAction() {
+              @Override
+              public void actionPerformed(ActionEvent e) {
+                action.run();
+              }
+            });
+  }
+}
