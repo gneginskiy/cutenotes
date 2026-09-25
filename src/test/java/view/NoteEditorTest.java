@@ -132,7 +132,7 @@ class NoteEditorTest {
           javax.swing.text.Style base =
               editor.getStyledDocument().getStyle(javax.swing.text.StyleContext.DEFAULT_STYLE);
           assertEquals(
-              EditorTheme.LINE_SPACING, javax.swing.text.StyleConstants.getLineSpacing(base));
+              NoteEditorKit.LINE_SPACING, javax.swing.text.StyleConstants.getLineSpacing(base));
           assertEquals(UiPalette.of(t).selection(), editor.getSelectionColor());
           assertEquals(EditorTheme.CARET_WIDTH, editor.getClientProperty("caretWidth"));
           assertEquals(0, edits.get(), "typography is not an undoable edit");
@@ -174,6 +174,59 @@ class NoteEditorTest {
         FontFamilies.resolve("No Such Font"), javax.swing.text.StyleConstants.getFontFamily(off));
   }
 
+  @Test
+  void aLongWordWithoutSpacesWrapsInsteadOfScrollingSideways() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          String key = "ZG9udC1ldmVyLXN0b3JlLWFueXRoaW5nLWluLXBsYWluLXRleHQtaXQncy1zdHVwaWQ=";
+          NoteEditor editor = new NoteEditor("key:\n" + key.repeat(3) + "\nend");
+          javax.swing.JScrollPane pane = new javax.swing.JScrollPane(editor);
+          pane.setSize(240, 400);
+          pane.doLayout();
+          pane.getViewport().doLayout();
+
+          assertTrue(editor.getScrollableTracksViewportWidth(), "no horizontal scrolling");
+          assertTrue(editor.getWidth() <= pane.getViewport().getWidth());
+          try {
+            double firstLine = editor.modelToView2D(5).getY();
+            double lastChar = editor.modelToView2D(5 + key.length() * 3 - 1).getY();
+            assertTrue(lastChar > firstLine, "the key continues on the next visual line");
+          } catch (javax.swing.text.BadLocationException e) {
+            throw new IllegalStateException(e);
+          }
+        });
+  }
+
+  @Test
+  void theFirstLineGetsTheSameLineSpacingAsTheRest() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          for (javax.swing.JTextPane pane :
+              new javax.swing.JTextPane[] {new NoteEditor(""), preview()}) {
+            insert(pane, 0, "first\nsecond\nthird");
+            pane.setSize(400, 400);
+            try {
+              double first = pane.modelToView2D(0).getHeight();
+              double second = pane.modelToView2D(6).getHeight();
+              assertEquals(second, first, 0.5, pane.getClass().getSimpleName() + ": even rhythm");
+            } catch (javax.swing.text.BadLocationException e) {
+              throw new IllegalStateException(e);
+            }
+          }
+        });
+  }
+
+  private static javax.swing.JTextPane preview() {
+    ThemePreview preview = new ThemePreview();
+    preview.render(ThemeHolder.current());
+    try {
+      preview.getDocument().remove(0, preview.getDocument().getLength());
+    } catch (javax.swing.text.BadLocationException e) {
+      throw new IllegalStateException(e);
+    }
+    return preview;
+  }
+
   private static Theme withSize(Theme t, int size) {
     return new Theme(
         t.bg(), t.fg(), t.caret(), t.codeColor(), t.fontFamily(), size, t.title(), t.alwaysOnTop());
@@ -184,12 +237,12 @@ class NoteEditorTest {
         t.bg(), t.fg(), t.caret(), code, t.fontFamily(), t.fontSize(), t.title(), t.alwaysOnTop());
   }
 
-  private static void insert(NoteEditor editor, int at, String text) {
+  private static void insert(javax.swing.JTextPane editor, int at, String text) {
     insert(editor, at, text, null);
   }
 
   private static void insert(
-      NoteEditor editor, int at, String text, javax.swing.text.AttributeSet attrs) {
+      javax.swing.JTextPane editor, int at, String text, javax.swing.text.AttributeSet attrs) {
     try {
       editor.getStyledDocument().insertString(at, text, attrs);
     } catch (javax.swing.text.BadLocationException e) {

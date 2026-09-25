@@ -5,6 +5,7 @@ import java.awt.KeyboardFocusManager;
 import java.util.Collections;
 import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
+import javax.swing.text.EditorKit;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -31,6 +32,12 @@ class NoteEditor extends JTextPane {
     addCaretListener(e -> clearImageInputAttributes());
     setMarkdown(markdown);
     CaretHistory.install(this);
+  }
+
+  /** Called by the JTextPane constructor, before the document and its views exist. */
+  @Override
+  protected EditorKit createDefaultEditorKit() {
+    return new NoteEditorKit();
   }
 
   /**

@@ -3,6 +3,7 @@ package view;
 import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.EditorKit;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyledDocument;
 
@@ -14,6 +15,12 @@ final class ThemePreview extends JTextPane {
   ThemePreview() {
     setEditable(false);
     setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+  }
+
+  /** The same typography as the note editor, so the preview shows what the notes will look like. */
+  @Override
+  protected EditorKit createDefaultEditorKit() {
+    return new NoteEditorKit();
   }
 
   void render(Theme t) {

@@ -31,10 +31,10 @@ Or, with Java 21+ installed, download the jar and double-click it.
 
 | System | Download | Start |
 |--------|----------|-------|
-| macOS (Apple silicon) | [cutenotes-2026-09-26-1-mac-arm64.zip](releases/mac-arm/cutenotes-2026-09-26-1-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
-| Windows x64 | [cutenotes-2026-09-26-1-windows-x64.zip](releases/windows/cutenotes-2026-09-26-1-windows-x64.zip) | Unzip, double-click `cuteNotes.bat` |
-| Linux x64 | [cutenotes-2026-09-26-1-linux-x64.tar.gz](releases/linux/cutenotes-2026-09-26-1-linux-x64.tar.gz) | `tar -xzf`, run `./cutenotes/cutenotes` |
-| Any OS with Java 21+ | [cutenotes-2026-09-26-1.jar](releases/cutenotes-2026-09-26-1.jar) | Double-click, or `java -jar` |
+| macOS (Apple silicon) | [cutenotes-2026-09-26-2-mac-arm64.zip](releases/mac-arm/cutenotes-2026-09-26-2-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
+| Windows x64 | [cutenotes-2026-09-26-2-windows-x64.zip](releases/windows/cutenotes-2026-09-26-2-windows-x64.zip) | Unzip, double-click `cuteNotes.bat` |
+| Linux x64 | [cutenotes-2026-09-26-2-linux-x64.tar.gz](releases/linux/cutenotes-2026-09-26-2-linux-x64.tar.gz) | `tar -xzf`, run `./cutenotes/cutenotes` |
+| Any OS with Java 21+ | [cutenotes-2026-09-26-2.jar](releases/cutenotes-2026-09-26-2.jar) | Double-click, or `java -jar` |
 
 ## How it works
 
@@ -77,6 +77,11 @@ mvn clean install
 Output: `target/cutenotes.jar`.
 
 # Release notes
+2026-Sep-26-2 (details in [docs/release_notes](docs/release_notes/2026-09-26-screenshots-and-text-layout.md)):
+- Long words without spaces (keys, hashes, URLs) now wrap instead of scrolling the note sideways
+- Even line rhythm: the first line of a note gets the same line spacing as the rest
+- New screenshots of the current version
+
 2026-Sep-26-1 (details in [docs/release_notes](docs/release_notes/2026-09-26-native-builds.md)):
 - Downloads for macOS (Apple silicon), Windows x64 and Linux x64 that bundle their own Java runtime: no JDK needed
 - The apps keep notes in `~/cutenotes_data`, so updating an app never deletes them; the plain jar stays portable
