@@ -24,14 +24,25 @@ Stores everything in plain text. Customizable colors, fonts, and other settings.
 
 ## Getting started
 
-Install Java 21+, download the release jar below, double-click on it.
+Download the build for your system below: it ships with its own Java runtime, nothing else to install.
+Or, with Java 21+ installed, download the jar and double-click it.
 
 ## Download
-[cutenotes-2026-09-26.jar](releases/cutenotes-2026-09-26.jar) - the latest release
+
+| System | Download | Start |
+|--------|----------|-------|
+| macOS (Apple silicon) | [cutenotes-2026-09-26-1-mac-arm64.zip](releases/mac-arm/cutenotes-2026-09-26-1-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
+| Windows x64 | [cutenotes-2026-09-26-1-windows-x64.zip](releases/windows/cutenotes-2026-09-26-1-windows-x64.zip) | Unzip, double-click `cuteNotes.bat` |
+| Linux x64 | [cutenotes-2026-09-26-1-linux-x64.tar.gz](releases/linux/cutenotes-2026-09-26-1-linux-x64.tar.gz) | `tar -xzf`, run `./cutenotes/cutenotes` |
+| Any OS with Java 21+ | [cutenotes-2026-09-26-1.jar](releases/cutenotes-2026-09-26-1.jar) | Double-click, or `java -jar` |
 
 ## How it works
 
-A `cutenotes_data/` folder is created next to the jar. It holds your notes, session, and options.
+The apps keep your notes, session and options in `cutenotes_data/` in your home folder, so updating the app keeps them.
+The plain jar is portable: its `cutenotes_data/` folder sits next to the jar.
+Moving from the jar to an app? Copy that folder into your home folder.
+
+Build all four downloads with `scripts/build-releases.sh <YYYY-MM-DD>` (on an Apple-silicon Mac with Corretto).
 
 ## Shortcuts
 
@@ -66,6 +77,11 @@ mvn clean install
 Output: `target/cutenotes.jar`.
 
 # Release notes
+2026-Sep-26-1 (details in [docs/release_notes](docs/release_notes/2026-09-26-native-builds.md)):
+- Downloads for macOS (Apple silicon), Windows x64 and Linux x64 that bundle their own Java runtime: no JDK needed
+- The apps keep notes in `~/cutenotes_data`, so updating an app never deletes them; the plain jar stays portable
+- `scripts/build-releases.sh` builds the jar and all three native downloads in one go
+
 2026-Sep-26 (details in [docs/release_notes](docs/release_notes)):
 - Six theme presets in Options (Paper, Graphite, Midnight, Sepia, Sticky, Terminal); new default "Paper" look
 - Redesigned tabs: raised active tab, close on hover or middle-click, "+" button, Close other tabs

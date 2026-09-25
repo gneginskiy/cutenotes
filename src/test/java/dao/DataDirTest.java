@@ -1,6 +1,7 @@
 package dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,6 +29,24 @@ class DataDirTest {
 
     assertEquals(fallback, DataDir.choose(blocker.resolve("cutenotes_data"), fallback));
     assertTrue(Files.isDirectory(fallback));
+  }
+
+  @Test
+  void anInstalledAppKeepsNotesInTheHomeFolderNotInsideItself(@TempDir Path tmp) {
+    // Replacing cuteNotes.app (or the app folder) on upgrade must not delete the notes.
+    Path insideApp = tmp.resolve("cuteNotes.app/Contents/app/cutenotes_data");
+    Path home = tmp.resolve("home/cutenotes_data");
+
+    assertEquals(home, DataDir.pick(true, insideApp, home));
+    assertTrue(Files.isDirectory(home));
+    assertFalse(Files.exists(insideApp));
+  }
+
+  @Test
+  void theBareJarStaysPortable(@TempDir Path tmp) {
+    Path nextToJar = tmp.resolve("jar/cutenotes_data");
+
+    assertEquals(nextToJar, DataDir.pick(false, nextToJar, tmp.resolve("home/cutenotes_data")));
   }
 
   @Test

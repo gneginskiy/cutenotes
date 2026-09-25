@@ -11,6 +11,9 @@ public final class DataDir {
 
   private static final String FOLDER = "cutenotes_data";
 
+  /** Set by the launchers of the packaged apps (macOS .app, Windows / Linux bundles). */
+  static final String INSTALLED_PROPERTY = "cutenotes.installed";
+
   private static volatile Path cached;
 
   private DataDir() {}
@@ -23,10 +26,27 @@ public final class DataDir {
   public static Path resolve() {
     Path dir = cached;
     if (dir == null) {
-      dir = choose(jarDir().resolve(FOLDER), Path.of(System.getProperty("user.home"), FOLDER));
+      dir =
+          pick(
+              Boolean.getBoolean(INSTALLED_PROPERTY),
+              jarDir().resolve(FOLDER),
+              Path.of(System.getProperty("user.home"), FOLDER));
       cached = dir;
     }
     return dir;
+  }
+
+  /**
+   * A packaged app always uses the home folder: its jar lives inside the app, which is replaced as
+   * a whole on upgrade. The bare jar stays portable and keeps its notes next to itself.
+   */
+  @SneakyThrows
+  static Path pick(boolean installed, Path nextToJar, Path home) {
+    if (installed) {
+      Files.createDirectories(home);
+      return home;
+    }
+    return choose(nextToJar, home);
   }
 
   @SneakyThrows
