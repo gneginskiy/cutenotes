@@ -2,7 +2,6 @@ package view;
 
 import java.util.EventObject;
 import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellEditor;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreePath;
@@ -22,7 +21,6 @@ class GroupCellEditor extends DefaultTreeCellEditor {
       return false;
     }
     TreePath path = tree.getSelectionPath();
-    return path != null
-        && ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject() instanceof Group;
+    return GroupNodes.userObject(path) instanceof Group;
   }
 }

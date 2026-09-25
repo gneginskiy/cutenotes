@@ -2,6 +2,7 @@ package view;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -115,6 +116,62 @@ class NoteEditorTest {
           editor.undoHistory().undo();
           assertEquals("", editor.markdown());
         });
+  }
+
+  @Test
+  void editorTypographyFollowsTheThemeWithoutTouchingContentOrHistory() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          NoteEditor editor = new NoteEditor("line one\nline **two**");
+          AtomicInteger edits = new AtomicInteger();
+          editor.getDocument().addUndoableEditListener(e -> edits.incrementAndGet());
+          Theme t = ThemeHolder.current();
+
+          editor.applyTheme(t);
+
+          javax.swing.text.Style base =
+              editor.getStyledDocument().getStyle(javax.swing.text.StyleContext.DEFAULT_STYLE);
+          assertEquals(
+              EditorTheme.LINE_SPACING, javax.swing.text.StyleConstants.getLineSpacing(base));
+          assertEquals(UiPalette.of(t).selection(), editor.getSelectionColor());
+          assertEquals(EditorTheme.CARET_WIDTH, editor.getClientProperty("caretWidth"));
+          assertEquals(0, edits.get(), "typography is not an undoable edit");
+          assertEquals("line one\nline **two**", editor.markdown(), "nor part of the note");
+        });
+  }
+
+  @Test
+  void themeFontThatIsNotInstalledFallsBackToAnInstalledUiFont() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          NoteEditor editor = new NoteEditor("x");
+          Theme t = ThemeHolder.current();
+
+          editor.applyTheme(
+              new Theme(t.bg(), t.fg(), null, t.codeColor(), "No Such Font", 15, null, true));
+
+          assertTrue(FontFamilies.installed().contains(editor.getFont().getFamily()));
+        });
+  }
+
+  @Test
+  void codeSectionsUseAnInstalledMonospaceAndPlainTextAnInstalledFont() {
+    Theme t = ThemeHolder.current();
+    Theme missingFont =
+        new Theme(t.bg(), t.fg(), null, t.codeColor(), "No Such Font", 15, null, true);
+    javax.swing.text.SimpleAttributeSet on = new javax.swing.text.SimpleAttributeSet();
+    javax.swing.text.SimpleAttributeSet off = new javax.swing.text.SimpleAttributeSet();
+
+    EditorFormat.styleCode(on, true, missingFont);
+    EditorFormat.styleCode(off, false, missingFont);
+
+    java.util.List<String> installed = FontFamilies.installed();
+    assertEquals(
+        model.ThemePreset.firstInstalled(model.ThemePresets.MONO, installed),
+        javax.swing.text.StyleConstants.getFontFamily(on),
+        "not the logical Monospaced (Courier New on Windows)");
+    assertEquals(
+        FontFamilies.resolve("No Such Font"), javax.swing.text.StyleConstants.getFontFamily(off));
   }
 
   private static Theme withSize(Theme t, int size) {

@@ -21,7 +21,6 @@ import model.Theme;
 final class EditorFormat {
 
   static final String CODE = "cutenotes.code";
-  static final String MONO = "Monospaced";
 
   private EditorFormat() {}
 
@@ -54,7 +53,8 @@ final class EditorFormat {
    */
   static void styleCode(MutableAttributeSet attrs, boolean on, Theme t) {
     attrs.addAttribute(CODE, on);
-    StyleConstants.setFontFamily(attrs, on ? MONO : t.fontFamily());
+    StyleConstants.setFontFamily(
+        attrs, on ? FontFamilies.mono() : FontFamilies.resolve(t.fontFamily()));
     StyleConstants.setForeground(attrs, on ? t.codeColor() : t.fg());
     StyleConstants.setBackground(attrs, on ? codeBackground(t) : t.bg());
   }

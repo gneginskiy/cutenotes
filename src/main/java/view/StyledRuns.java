@@ -45,18 +45,4 @@ final class StyledRuns {
     }
     return at;
   }
-
-  static List<Run> trimTrailingNewline(List<Run> runs) {
-    if (runs.isEmpty()) {
-      return runs;
-    }
-    Run last = runs.get(runs.size() - 1);
-    if (!last.text().endsWith("\n")) {
-      return runs;
-    }
-    List<Run> copy = new ArrayList<>(runs);
-    copy.set(
-        copy.size() - 1, new Run(last.text().substring(0, last.text().length() - 1), last.attrs()));
-    return copy;
-  }
 }

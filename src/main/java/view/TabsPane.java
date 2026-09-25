@@ -1,10 +1,7 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -17,15 +14,11 @@ public class TabsPane {
   private final JPanel root = new JPanel(new BorderLayout());
   private final JPanel inner = new JPanel(new BorderLayout());
   private final TabCards cards = new TabCards();
-  private final List<String> order = new ArrayList<>();
-  private final Map<String, TabState> stateById = new HashMap<>();
-  private final TabHeader header =
-      new TabHeader(this::select, (id, name) -> stateById.get(id).name = name, this::reorder);
-  private final JScrollPane headerScroll = TabPanes.header(header);
+  private final OpenTabs tabs = new OpenTabs();
+  private final TabStrip tabStrip = new TabStrip(this::select, tabs::rename, tabs::reorder, root);
+  private final TabHeader header = tabStrip.header();
   private final TabHistory history = new TabHistory();
   private final NoteEditor defaultArea = cards.defaultArea();
-  private final TabStrip tabStrip = new TabStrip(headerScroll, root, header::isEditing);
-  private String activeId;
 
   public TabsPane() {
     root.add(tabStrip.component(), BorderLayout.NORTH);
@@ -35,6 +28,15 @@ public class TabsPane {
 
   public JPanel component() {
     return root;
+  }
+
+  /** The tabs bar: where the session plugs in its requests and the window its notifications. */
+  TabStrip strip() {
+    return tabStrip;
+  }
+
+  String activeId() {
+    return tabs.activeId();
   }
 
   public void addBelowHeader(JComponent c) {
@@ -51,7 +53,7 @@ public class TabsPane {
   }
 
   public List<String> openIds() {
-    return new ArrayList<>(order);
+    return tabs.ids();
   }
 
   public void setDefaultContent(String text) {
@@ -59,15 +61,15 @@ public class TabsPane {
   }
 
   public List<Tab> snapshot() {
-    return TabsOps.snapshot(order, stateById, defaultArea);
+    return tabs.snapshot(defaultArea);
   }
 
   Tab snapshotOf(String id) {
-    return TabsOps.snapshotOf(id, stateById, defaultArea);
+    return tabs.snapshotOf(id, defaultArea);
   }
 
   public void openTab(String id, String name, String text) {
-    if (stateById.containsKey(id)) {
+    if (tabs.contains(id)) {
       select(id);
       return;
     }
@@ -75,70 +77,61 @@ public class TabsPane {
     JScrollPane pane = TabPanes.content(area);
     cards.add(pane, id);
     header.addTab(id, name);
-    order.add(id);
-    stateById.put(id, new TabState(name, area, pane));
+    tabs.add(id, new TabState(name, area, pane));
     select(id);
   }
 
   public Tab closeCurrent() {
-    return close(activeId);
+    return close(tabs.activeId());
   }
 
   /** Closes the tab with {@code id} (active or not); returns its final state, or null. */
   Tab close(String id) {
-    TabState s = id == null ? null : stateById.remove(id);
+    boolean wasActive = id != null && id.equals(tabs.activeId());
+    int idx = tabs.indexOf(id);
+    TabState s = tabs.remove(id);
     if (s == null) {
       return null;
     }
-    int idx = order.indexOf(id);
     history.record(id);
-    order.remove(id);
     cards.remove(s.pane);
     header.removeTab(id);
-    if (id.equals(activeId)) {
-      activeId = null;
-      if (order.isEmpty()) {
-        cards.showDefault();
-      } else {
-        select(order.get(Math.max(0, idx - 1)));
-      }
+    String neighbour = tabs.neighbourOf(idx);
+    if (neighbour == null) {
+      cards.showDefault();
+      tabStrip.revealer().hide();
+    } else if (wasActive) {
+      select(neighbour);
     }
     return new Tab(id, s.name, s.area.markdown());
   }
 
   public String popLastClosed() {
-    return history.popReopenable(order);
+    return history.popReopenable(tabs.ids());
   }
 
   public void selectNext() {
-    if (order.size() >= 2) {
-      select(order.get((order.indexOf(activeId) + 1) % order.size()));
-    }
+    select(tabs.next());
   }
 
   public NoteEditor activeArea() {
-    TabState s = stateById.get(activeId);
+    TabState s = tabs.get(tabs.activeId());
     return s == null ? defaultArea : s.area;
   }
 
   public void applyTheme(Theme t) {
-    TabsOps.applyTheme(t, defaultArea, stateById);
-    header.applyTheme(t.bg(), t.fg());
-    tabStrip.applyTheme(t.bg(), t.fg());
+    defaultArea.applyTheme(t);
+    tabs.applyTheme(t);
+    tabStrip.applyTheme(UiPalette.of(t));
   }
 
   void select(String id) {
-    if (id == null || !stateById.containsKey(id)) {
+    if (!tabs.contains(id)) {
       return;
     }
-    activeId = id;
+    tabs.setActive(id);
     cards.show(id);
     header.selectTab(id);
-    TabPanes.focusLater(stateById.get(id).area);
-  }
-
-  private void reorder(List<String> ids) {
-    order.clear();
-    order.addAll(ids);
+    TabPanes.focusLater(tabs.get(id).area);
   }
 }

@@ -6,13 +6,6 @@ final class Colors {
 
   private Colors() {}
 
-  static Color darken(Color c, int delta) {
-    return new Color(
-        Math.max(0, c.getRed() - delta),
-        Math.max(0, c.getGreen() - delta),
-        Math.max(0, c.getBlue() - delta));
-  }
-
   static Color inverse(Color c) {
     return new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
   }
@@ -25,13 +18,18 @@ final class Colors {
         (int) (a.getBlue() * (1 - r) + b.getBlue() * r));
   }
 
-  static Color contrast(Color bg, float ratio) {
-    int avg = (bg.getRed() + bg.getGreen() + bg.getBlue()) / 3;
-    return blend(bg, avg < 128 ? Color.WHITE : Color.BLACK, ratio);
+  /** Perceived brightness below the middle grey: light text belongs on this colour. */
+  static boolean isDark(Color c) {
+    return (c.getRed() * 299 + c.getGreen() * 587 + c.getBlue() * 114) / 1000 < 128;
   }
 
-  static Color divider(Color bg) {
-    return contrast(bg, 0.25f);
+  /** Moves {@code bg} towards white on dark colours and towards black on light ones. */
+  static Color contrast(Color bg, float ratio) {
+    return blend(bg, isDark(bg) ? Color.WHITE : Color.BLACK, ratio);
+  }
+
+  static Color withAlpha(Color c, int alpha) {
+    return new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha);
   }
 
   static String toHex(Color c) {

@@ -1,19 +1,16 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
+import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 
 import dao.GroupStore;
@@ -21,7 +18,10 @@ import dao.TabRepository;
 import model.Tab;
 import model.TabMeta;
 
-/** Browses every note in a group tree: reopen, drag to regroup, rename inline, delete. */
+/**
+ * Browses every note in a group tree: type to filter and Enter to open (a quick switcher), drag to
+ * regroup, rename inline, delete.
+ */
 class NotesBrowserDialog extends JDialog {
 
   /** What the browser asks the owner to do: open a note, or delete it (closing its tab if open). */
@@ -29,6 +29,7 @@ class NotesBrowserDialog extends JDialog {
 
   private final GroupTree tree;
   private final transient NoteGroupActions actions;
+  private final BrowserToolbar toolbar;
 
   NotesBrowserDialog(
       JFrame owner,
@@ -36,35 +37,42 @@ class NotesBrowserDialog extends JDialog {
       GroupStore groups,
       Set<String> openIds,
       Callbacks callbacks) {
-    super(owner, "Notes", false);
+    super(owner, "All notes", false);
+    UiPalette palette = UiPalette.current();
     List<TabMeta> notes =
         repo.listMeta().stream().filter(m -> !Tab.DEFAULT_ID.equals(m.id())).toList();
     this.tree = new GroupTree(notes, openIds, groups.read());
     this.actions = new NoteGroupActions(this, tree, groups, callbacks);
+    this.toolbar = new BrowserToolbar(tree, actions, this::openBestAndClose, palette);
     tree.setOnRename(actions::rename);
+    tree.setBackground(palette.bg());
+    tree.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
     TreeReorder reorder = new TreeReorder(tree, actions);
     tree.addMouseListener(reorder);
     tree.addMouseMotionListener(reorder);
     wireTree();
-    add(toolbar(), BorderLayout.NORTH);
-    add(new JScrollPane(tree), BorderLayout.CENTER);
+    getContentPane().setBackground(palette.bg());
+    add(toolbar, BorderLayout.NORTH);
+    add(TabPanes.content(tree), BorderLayout.CENTER);
     bindClose();
-    setSize(380, 460);
+    setSize(440, 520);
     WindowPlacement.centerOnOwner(this);
     setAlwaysOnTop(true);
   }
 
-  private JPanel toolbar() {
-    JPanel bar = new JPanel();
-    JCheckBox showAll = new JCheckBox("All notes", true);
-    showAll.setFocusable(false);
-    showAll.addActionListener(e -> tree.setShowAll(showAll.isSelected()));
-    JButton newGroup = new JButton("New group");
-    newGroup.setFocusable(false);
-    newGroup.addActionListener(e -> actions.newGroup(null));
-    bar.add(showAll);
-    bar.add(newGroup);
-    return bar;
+  static void open(
+      JFrame owner, TabRepository repo, GroupStore groups, List<String> openIds, NoteSession s) {
+    new NotesBrowserDialog(
+            owner, repo, groups, new HashSet<>(openIds), new Callbacks(s::openExisting, s::delete))
+        .setVisible(true);
+  }
+
+  private void openBestAndClose() {
+    TabMeta best = toolbar.best();
+    if (best != null) {
+      actions.open(best.id());
+      dispose();
+    }
   }
 
   private void wireTree() {
@@ -91,38 +99,12 @@ class NotesBrowserDialog extends JDialog {
             }
           }
         });
-    tree.addKeyListener(
-        new KeyAdapter() {
-          @Override
-          public void keyPressed(KeyEvent e) {
-            handleKey(e);
-          }
-        });
+    tree.addKeyListener(new BrowserTreeKeys(tree, actions, toolbar));
   }
 
   private void maybePopup(MouseEvent e) {
     if (e.isPopupTrigger()) {
       NotesContextMenu.show(tree, actions, e.getX(), e.getY());
-    }
-  }
-
-  private void handleKey(KeyEvent e) {
-    int code = e.getKeyCode();
-    if (code == KeyEvent.VK_ENTER && tree.selectedNote() != null) {
-      actions.open(tree.selectedNote().id());
-    } else if (code == KeyEvent.VK_F2 && tree.selectedGroupId() != null) {
-      tree.editGroup(tree.selectedGroupId());
-    } else if (code == KeyEvent.VK_DELETE || code == KeyEvent.VK_BACK_SPACE) {
-      deleteSelected();
-    }
-  }
-
-  private void deleteSelected() {
-    TabMeta note = tree.selectedNote();
-    if (note != null) {
-      actions.deleteNote(note);
-    } else if (tree.selectedGroupId() != null) {
-      actions.deleteGroup(tree.selectedGroupId());
     }
   }
 

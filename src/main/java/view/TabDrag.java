@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
 final class TabDrag {
@@ -18,25 +17,25 @@ final class TabDrag {
   private static final int THRESHOLD = 5;
 
   private final Container header;
-  private final Map<String, JLabel> labelsById;
+  private final Map<String, TabChip> chipsById;
   private final Consumer<List<String>> onReorder;
-  private JLabel dragLabel;
+  private TabChip dragChip;
   private int pressX;
   private boolean active;
 
-  TabDrag(Container header, Map<String, JLabel> labelsById, Consumer<List<String>> onReorder) {
+  TabDrag(Container header, Map<String, TabChip> chipsById, Consumer<List<String>> onReorder) {
     this.header = header;
-    this.labelsById = labelsById;
+    this.chipsById = chipsById;
     this.onReorder = onReorder;
   }
 
-  void attach(JLabel label) {
-    label.addMouseListener(
+  void attach(TabChip chip) {
+    chip.addMouseListener(
         new MouseAdapter() {
           @Override
           public void mousePressed(MouseEvent e) {
             if (e.getButton() == MouseEvent.BUTTON1) {
-              start(e, label);
+              start(e, chip);
             }
           }
 
@@ -45,23 +44,23 @@ final class TabDrag {
             end();
           }
         });
-    label.addMouseMotionListener(
+    chip.addMouseMotionListener(
         new MouseMotionAdapter() {
           @Override
           public void mouseDragged(MouseEvent e) {
-            drag(e, label);
+            drag(e, chip);
           }
         });
   }
 
-  private void start(MouseEvent e, JLabel label) {
-    dragLabel = label;
-    pressX = SwingUtilities.convertPoint(label, e.getPoint(), header).x;
+  private void start(MouseEvent e, TabChip chip) {
+    dragChip = chip;
+    pressX = SwingUtilities.convertPoint(chip, e.getPoint(), header).x;
     active = false;
   }
 
-  private void drag(MouseEvent e, JLabel source) {
-    if (dragLabel == null) {
+  private void drag(MouseEvent e, TabChip source) {
+    if (dragChip == null) {
       return;
     }
     int x = SwingUtilities.convertPoint(source, e.getPoint(), header).x;
@@ -70,12 +69,12 @@ final class TabDrag {
     }
     active = true;
     for (Component c : header.getComponents()) {
-      if (c == dragLabel || !(c instanceof JLabel)) {
+      if (c == dragChip || !(c instanceof TabChip)) {
         continue;
       }
       Rectangle b = c.getBounds();
       if (x >= b.x && x <= b.x + b.width) {
-        header.setComponentZOrder(dragLabel, header.getComponentZOrder(c));
+        header.setComponentZOrder(dragChip, header.getComponentZOrder(c));
         header.revalidate();
         header.repaint();
         break;
@@ -87,14 +86,14 @@ final class TabDrag {
     if (active) {
       onReorder.accept(currentOrder());
     }
-    dragLabel = null;
+    dragChip = null;
     active = false;
   }
 
   private List<String> currentOrder() {
     List<String> ids = new ArrayList<>();
     for (Component c : header.getComponents()) {
-      for (Map.Entry<String, JLabel> e : labelsById.entrySet()) {
+      for (Map.Entry<String, TabChip> e : chipsById.entrySet()) {
         if (e.getValue() == c) {
           ids.add(e.getKey());
           break;

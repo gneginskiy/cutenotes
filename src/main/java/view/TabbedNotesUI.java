@@ -1,13 +1,6 @@
 package view;
 
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.util.HashSet;
 import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.KeyStroke;
 
 import dao.GroupStore;
 import dao.SessionStore;
@@ -22,6 +15,8 @@ public class TabbedNotesUI extends JFrame {
   private final TabsPane tabs = new TabsPane();
   private final SearchBar searchBar = new SearchBar(tabs::activeArea);
   private final AppOptions appOptions = new AppOptions(this, this::applyTheme);
+  private final Toast toast = new Toast(getRootPane());
+  private final WindowMemory windowMemory = new WindowMemory();
   private final Runnable smartReveal = () -> tabs.revealer().revealIf(!tabs.openIds().isEmpty());
   private final SaveStatus saveStatus;
   private final NoteSession session;
@@ -34,50 +29,41 @@ public class TabbedNotesUI extends JFrame {
     this.groups = groups;
     this.saveStatus = new SaveStatus(this::setTitle, SaveStatus.dialogOver(this), defaultTitle);
     this.session = new NoteSession(repo, sessions, tabs, saveStatus);
-    setSize(500, 400);
-    WindowPlacement.centerOnScreen(this);
-    new Chrome(this, buildMenu(), tabs, searchBar);
-    Zoom.install(this, appOptions);
-    Help.install(this);
+    windowMemory.restore(this);
+    new Chrome(this, AppMenu.build(getRootPane(), smartReveal, menuActions()), tabs, searchBar);
+    Zoom.install(this, appOptions, toast::flash);
+    tabs.strip().setNotifier(toast::flash);
     tabs.addBelowHeader(searchBar);
     add(tabs.component());
     session.restore();
     applyTheme(ThemeHolder.current());
-    AppExit.install(this, session::persist, SaveStatus.askQuitUnsaved(this));
+    AppExit.install(this, this::persist, SaveStatus.askQuitUnsaved(this));
     session.start();
     setVisible(true);
   }
 
-  private JMenuBar buildMenu() {
-    int mask = ShortcutMask.menu();
-    JMenuBar bar = new ThemedMenuBar();
-    JMenu menu = new ThemedMenu("Menu");
-    menu.add(item("New tab", ks(KeyEvent.VK_T, mask), session::newTab));
-    menu.add(
-        item(
-            "Reopen last",
-            ks(KeyEvent.VK_T, mask | InputEvent.SHIFT_DOWN_MASK),
-            session::reopenLastClosed));
-    menu.add(item("Close tab", ks(KeyEvent.VK_W, mask), session::closeCurrent));
-    menu.add(item("Reopen tab...", ks(KeyEvent.VK_R, mask), this::reopenTab));
-    menu.add(item("Next tab", ks(KeyEvent.VK_TAB, InputEvent.ALT_DOWN_MASK), tabs::selectNext));
-    menu.add(item("Next tab", ks(KeyEvent.VK_TAB, InputEvent.CTRL_DOWN_MASK), tabs::selectNext));
-    menu.add(item("Find", ks(KeyEvent.VK_F, mask), searchBar::open));
-    menu.add(itemPlain("Options", ks(KeyEvent.VK_O, mask), appOptions::openDialog));
-    bar.add(menu);
-    return bar;
+  private AppMenu.Actions menuActions() {
+    return new AppMenu.Actions(
+        session::newTab,
+        this::reopenLastClosed,
+        session::closeCurrent,
+        () -> NotesBrowserDialog.open(this, repo, groups, tabs.openIds(), session),
+        tabs::selectNext,
+        searchBar::open,
+        appOptions::openDialog,
+        () -> new HelpDialog(this).setVisible(true));
   }
 
-  private static KeyStroke ks(int keyCode, int modifiers) {
-    return KeyStroke.getKeyStroke(keyCode, modifiers);
+  private void reopenLastClosed() {
+    if (!session.reopenLastClosed()) {
+      toast.flash("No recently closed tabs");
+    }
   }
 
-  private JMenuItem item(String label, KeyStroke acc, Runnable action) {
-    return MenuItems.make(getRootPane(), smartReveal, label, acc, action);
-  }
-
-  private JMenuItem itemPlain(String label, KeyStroke acc, Runnable action) {
-    return MenuItems.make(getRootPane(), () -> {}, label, acc, action);
+  /** Runs on exit (possibly on the shutdown-hook thread); returns whether every note was saved. */
+  private boolean persist() {
+    windowMemory.save(this);
+    return session.persist();
   }
 
   private void applyTheme(Theme t) {
@@ -86,15 +72,6 @@ public class TabbedNotesUI extends JFrame {
     tabs.applyTheme(t);
     MenuTheme.apply(getJMenuBar(), t);
     searchBar.applyTheme(t);
-  }
-
-  private void reopenTab() {
-    new NotesBrowserDialog(
-            this,
-            repo,
-            groups,
-            new HashSet<>(tabs.openIds()),
-            new NotesBrowserDialog.Callbacks(session::openExisting, session::delete))
-        .setVisible(true);
+    PlatformLook.tintTitleBar(this, UiPalette.of(t));
   }
 }

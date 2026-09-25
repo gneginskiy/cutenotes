@@ -3,7 +3,6 @@ package view;
 import java.awt.Cursor;
 import java.awt.event.MouseEvent;
 import javax.swing.event.MouseInputAdapter;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import model.Group;
@@ -30,7 +29,7 @@ class TreeReorder extends MouseInputAdapter {
 
   @Override
   public void mousePressed(MouseEvent e) {
-    source = tree.getPathForLocation(e.getX(), e.getY());
+    source = tree.searching() ? null : tree.getPathForLocation(e.getX(), e.getY());
     pressY = e.getY();
     dragging = false;
   }
@@ -54,21 +53,24 @@ class TreeReorder extends MouseInputAdapter {
   }
 
   private void drop(TreePath from, TreePath to) {
-    Object dragged = userObject(from);
-    String target = tree.dropTargetGroupId(to);
+    Object dragged = GroupNodes.userObject(from);
+    Object target = GroupNodes.userObject(to);
+    String targetGroup = groupOf(target);
     if (dragged instanceof TabMeta note) {
-      String before = tree.dropBeforeNoteId(to);
+      String before = target instanceof TabMeta meta ? meta.id() : null;
       if (!note.id().equals(before)) {
-        actions.placeNote(note.id(), target, before);
+        actions.placeNote(note.id(), targetGroup, before);
       }
-    } else if (dragged instanceof Group group && !group.id().equals(target)) {
-      actions.moveGroup(group.id(), target);
+    } else if (dragged instanceof Group group && !group.id().equals(targetGroup)) {
+      actions.moveGroup(group.id(), targetGroup);
     }
   }
 
-  private static Object userObject(TreePath path) {
-    return path == null
-        ? null
-        : ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+  /** The group a drop onto {@code target} lands in: the group itself, or the note's group. */
+  private String groupOf(Object target) {
+    if (target instanceof Group group) {
+      return group.id();
+    }
+    return target instanceof TabMeta meta ? tree.data().groupOf(meta.id()) : null;
   }
 }

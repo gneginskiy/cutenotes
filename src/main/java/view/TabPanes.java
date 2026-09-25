@@ -2,6 +2,7 @@ package view;
 
 import java.awt.Dimension;
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
@@ -9,8 +10,9 @@ import javax.swing.text.JTextComponent;
 
 final class TabPanes {
 
-  private static final int HEADER_HEIGHT = 40;
+  private static final int HEADER_HEIGHT = 36;
   private static final int SCROLLBAR_HEIGHT = 6;
+  private static final int CONTENT_BAR = 10;
 
   private TabPanes() {}
 
@@ -27,15 +29,10 @@ final class TabPanes {
     pane.setBorder(BorderFactory.createEmptyBorder());
     pane.setPreferredSize(new Dimension(0, height));
     pane.setMinimumSize(new Dimension(0, height));
-    pane.getViewport().setBackground(header.getBackground());
-    header.addPropertyChangeListener(
-        "background", e -> pane.getViewport().setBackground(header.getBackground()));
+    followBackground(header, pane);
     pane.setWheelScrollingEnabled(false);
-    JScrollBar bar = pane.getHorizontalScrollBar();
-    bar.setUI(new ThinScrollBarUI());
-    bar.setOpaque(false);
-    bar.setPreferredSize(new Dimension(0, barHeight));
-    bar.setUnitIncrement(20);
+    thin(pane.getHorizontalScrollBar(), new Dimension(0, barHeight));
+    pane.getHorizontalScrollBar().setUnitIncrement(20);
     return pane;
   }
 
@@ -43,12 +40,31 @@ final class TabPanes {
     SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(area::requestFocusInWindow));
   }
 
-  static JScrollPane content(JTextComponent area) {
+  /** A borderless scroller with thin overlay-style scrollbars that suit every theme. */
+  static JScrollPane content(JComponent area) {
     JScrollPane pane = new JScrollPane(area);
     pane.setBorder(BorderFactory.createEmptyBorder());
-    pane.getViewport().setBackground(area.getBackground());
-    area.addPropertyChangeListener(
-        "background", e -> pane.getViewport().setBackground(area.getBackground()));
+    followBackground(area, pane);
+    thin(pane.getVerticalScrollBar(), new Dimension(CONTENT_BAR, 0));
+    thin(pane.getHorizontalScrollBar(), new Dimension(0, CONTENT_BAR));
+    pane.getVerticalScrollBar().setUnitIncrement(16);
     return pane;
+  }
+
+  private static void thin(JScrollBar bar, Dimension size) {
+    bar.setUI(new ThinScrollBarUI());
+    bar.setOpaque(false);
+    bar.setPreferredSize(size);
+  }
+
+  /** The viewport and the corners always show the colour of the component they scroll. */
+  private static void followBackground(JComponent view, JScrollPane pane) {
+    Runnable sync =
+        () -> {
+          pane.getViewport().setBackground(view.getBackground());
+          pane.setBackground(view.getBackground());
+        };
+    sync.run();
+    view.addPropertyChangeListener("background", e -> sync.run());
   }
 }

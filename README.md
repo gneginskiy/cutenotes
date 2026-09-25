@@ -27,7 +27,7 @@ Stores everything in plain text. Customizable colors, fonts, and other settings.
 Install Java 21+, download the release jar below, double-click on it.
 
 ## Download
-[cutenotes-2026-06-05.jar](releases/cutenotes-2026-06-05.jar) - the latest release
+[cutenotes-2026-09-26.jar](releases/cutenotes-2026-09-26.jar) - the latest release
 
 ## How it works
 
@@ -40,15 +40,17 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 | Action                      | macOS                         | Win / Linux                     |
 |-----------------------------|-------------------------------|---------------------------------|
 | New / Close tab             | `Cmd+T` / `Cmd+W`             | `Ctrl+T` / `Ctrl+W`             |
-| Reopen last closed / picker | `Cmd+Shift+T` / `Cmd+R`       | `Ctrl+Shift+T` / `Ctrl+R`       |
+| Reopen last closed          | `Cmd+Shift+T`                 | `Ctrl+Shift+T`                  |
+| All notes: search & open    | `Cmd+R`, type, `Enter`        | `Ctrl+R`, type, `Enter`         |
+| Close tab with the mouse    | Middle-click or hover ×       | Middle-click or hover ×         |
 | Next tab                    | `Option+Tab` or `Ctrl+Tab`    | `Ctrl+Tab`                      |
 | Find                        | `Cmd+F`                       | `Ctrl+F`                        |
 | Options                     | `Cmd+O`                       | `Ctrl+O`                        |
-| Zoom in / out text          | `Cmd+Shift+=` / `Cmd+Shift+-` | `Ctrl+Shift+=` / `Ctrl+Shift+-` |
+| Zoom in / out text          | `Cmd+=` / `Cmd+-`             | `Ctrl+=` / `Ctrl+-` (or numpad `+`/`-`) |
 | Undo / Redo                 | `Cmd+Z` / `Cmd+Shift+Z`       | `Ctrl+Z` / `Ctrl+Shift+Z`       |
 | Cut / copy / duplicate line | `Cmd+X` / `Cmd+C` / `Cmd+D`   | `Ctrl+X` / `Ctrl+C` / `Ctrl+D`  |
 | Move line up / down         | `Cmd+Shift+↑` / `Cmd+Shift+↓` | `Ctrl+Shift+↑` / `Ctrl+Shift+↓` |
-| Back / forward to last spot | `Cmd+Option+←` / `Cmd+Option+→` | `Ctrl+Alt+←` / `Ctrl+Alt+→`   |
+| Back / forward to last spot | `Cmd+Option+←` / `Cmd+Option+→` | `Alt+←` / `Alt+→`             |
 | Bold / Italic / Underline   | `Cmd+B` / `Cmd+I` / `Cmd+U`   | `Ctrl+B` / `Ctrl+I` / `Ctrl+U`  |
 | Strikethrough               | `Cmd+Shift+S`                 | `Ctrl+Shift+S`                  |
 | Code (monospace)            | `Cmd+Shift+C`                 | `Ctrl+Shift+C`                  |
@@ -64,6 +66,16 @@ mvn clean install
 Output: `target/cutenotes.jar`.
 
 # Release notes
+2026-Sep-26 (details in [docs/release_notes](docs/release_notes)):
+- Six theme presets in Options (Paper, Graphite, Midnight, Sepia, Sticky, Terminal); new default "Paper" look
+- Redesigned tabs: raised active tab, close on hover or middle-click, "+" button, Close other tabs
+- `Cmd/Ctrl+R` is a quick switcher: type to filter, `Enter` to open; relative dates and icons
+- Roomier editor (padding, line spacing), themed selection and scrollbars, rounded find bar
+- Key-cap help (F1), fading status toasts, smooth animations, remembered window size and position
+- Move line up / down (`Cmd/Ctrl+Shift+↑/↓`) works like IntelliJ: moves the whole selection as a block, keeps it selected, no view jumps, one undo step
+- Cross-platform: native look on Windows, platform-safe shortcuts (`Ctrl+Tab`, `Alt+←/→` on Windows/Linux), zoom with `Ctrl+=`/`Ctrl+-` or numpad on any keyboard layout, installed monospace fonts for code
+- Reliability fixes from the critical bug review (autosave, atomic writes, single instance, clean exit)
+
 2026-Jun-05:
 - Back / forward caret navigation across visited spots (`Cmd/Ctrl+Alt+←/→`), like an IDE
 - Configurable code-section colour with an auto, theme-aware background

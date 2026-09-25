@@ -11,21 +11,25 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JTextField;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 final class InlineEditor {
 
   private InlineEditor() {}
 
   static JTextField create(
-      String initial, BiConsumer<JTextField, String> onCommit, Consumer<JTextField> onCancel) {
+      String initial,
+      Font font,
+      UiPalette palette,
+      BiConsumer<JTextField, String> onCommit,
+      Consumer<JTextField> onCancel) {
     JTextField field = new JTextField(initial);
-    field.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
-    field.setBackground(TabHeader.ACTIVE);
-    field.setForeground(TabHeader.ACTIVE_FG);
-    field.setCaretColor(Colors.inverse(TabHeader.ACTIVE));
-    field.setFont(field.getFont().deriveFont(Font.BOLD));
+    field.setBorder(BorderFactory.createEmptyBorder());
+    field.setOpaque(false);
+    field.setForeground(palette.fg());
+    field.setCaretColor(palette.accent());
+    field.setSelectionColor(palette.selection());
+    field.setSelectedTextColor(palette.fg());
+    field.setFont(font);
     field.selectAll();
     field.addActionListener(a -> onCommit.accept(field, field.getText()));
     attachCommitOnBlur(field, onCommit);
@@ -60,32 +64,14 @@ final class InlineEditor {
   }
 
   private static void attachAutoResize(JTextField field) {
-    field
-        .getDocument()
-        .addDocumentListener(
-            new DocumentListener() {
-              @Override
-              public void insertUpdate(DocumentEvent e) {
-                resize(field);
-              }
-
-              @Override
-              public void removeUpdate(DocumentEvent e) {
-                resize(field);
-              }
-
-              @Override
-              public void changedUpdate(DocumentEvent e) {
-                resize(field);
-              }
-            });
+    field.getDocument().addDocumentListener(DocumentChanges.on(() -> resize(field)));
   }
 
   private static void resize(JTextField field) {
     FontMetrics fm = field.getFontMetrics(field.getFont());
     String text = field.getText().isEmpty() ? " " : field.getText();
-    int w = fm.stringWidth(text) + 36;
-    int h = fm.getHeight() + 12;
+    int w = fm.stringWidth(text) + 8;
+    int h = fm.getHeight() + 2;
     Dimension size = new Dimension(w, h);
     field.setPreferredSize(size);
     field.setMaximumSize(size);

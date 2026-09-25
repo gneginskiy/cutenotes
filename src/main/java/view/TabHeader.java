@@ -1,58 +1,67 @@
 package view;
 
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
+/** The row of {@link TabChip}s: select, rename, close, drag to reorder. */
 class TabHeader extends JPanel {
 
-  static Color ACTIVE = new Color(250, 250, 180);
-  static Color INACTIVE = new Color(235, 235, 165);
-  static Color ACTIVE_FG = Color.BLACK;
-  static Color INACTIVE_FG = new Color(110, 110, 90);
+  /** What the header asks its owner to do. */
+  record Actions(
+      Consumer<String> select,
+      BiConsumer<String, String> rename,
+      Consumer<List<String>> reorder,
+      Consumer<String> close,
+      Consumer<String> closeOthers,
+      Runnable newTab) {}
 
-  private final Map<String, JLabel> labelsById = new HashMap<>();
-  private final Consumer<String> onSelect;
-  private final BiConsumer<String, String> onRename;
+  private final Map<String, TabChip> chipsById = new LinkedHashMap<>();
+  private final Actions actions;
   private final TabDrag drag;
+  private transient UiPalette palette = UiPalette.current();
   private String activeId;
 
-  TabHeader(
-      Consumer<String> onSelect,
-      BiConsumer<String, String> onRename,
-      Consumer<List<String>> onReorder) {
-    this.onSelect = onSelect;
-    this.onRename = onRename;
-    this.drag = new TabDrag(this, labelsById, onReorder);
+  TabHeader(Actions actions) {
+    this.actions = actions;
+    this.drag = new TabDrag(this, chipsById, actions.reorder());
     setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-    setBackground(INACTIVE);
+    setOpaque(true);
+    addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+              actions.newTab().run();
+            }
+          }
+        });
   }
 
   void addTab(String id, String name) {
-    JLabel label = buildLabel(id, name);
-    labelsById.put(id, label);
-    drag.attach(label);
-    add(label);
+    TabChip chip = new TabChip(name, () -> actions.close().accept(id));
+    chip.applyPalette(palette);
+    chip.addMouseListener(new TabChipMouse(this, id, chip));
+    chipsById.put(id, chip);
+    drag.attach(chip);
+    add(chip);
     revalidate();
+    repaint();
   }
 
   void removeTab(String id) {
-    JLabel label = labelsById.remove(id);
-    if (label != null) {
-      remove(label);
+    TabChip chip = chipsById.remove(id);
+    if (chip != null) {
+      remove(chip);
       revalidate();
       repaint();
     }
@@ -60,91 +69,61 @@ class TabHeader extends JPanel {
 
   void selectTab(String id) {
     this.activeId = id;
-    labelsById.forEach(
-        (i, l) -> {
-          boolean sel = i.equals(id);
-          l.setBackground(sel ? ACTIVE : INACTIVE);
-          l.setForeground(sel ? ACTIVE_FG : INACTIVE_FG);
-          l.setFont(l.getFont().deriveFont(sel ? Font.BOLD : Font.PLAIN));
-        });
-    repaint();
+    chipsById.forEach((i, chip) -> chip.setActive(i.equals(id)));
+    TabChip active = chipsById.get(id);
+    if (active != null) {
+      SwingUtilities.invokeLater(() -> active.scrollRectToVisible(new Rectangle(active.getSize())));
+    }
   }
 
-  void applyTheme(Color bg, Color fg) {
-    ACTIVE = bg;
-    INACTIVE = Colors.contrast(bg, 0.12f);
-    ACTIVE_FG = fg;
-    INACTIVE_FG = Colors.blend(fg, INACTIVE, 0.35f);
-    setBackground(INACTIVE);
-    setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.divider(bg)));
+  void applyTheme(UiPalette p) {
+    this.palette = p;
+    setBackground(p.chrome());
+    chipsById.values().forEach(chip -> chip.applyPalette(p));
     selectTab(activeId);
   }
 
   boolean isEditing() {
-    return getComponentCount() != labelsById.size();
+    return chipsById.values().stream().anyMatch(TabChip::isEditing);
   }
 
-  private JLabel buildLabel(String id, String name) {
-    JLabel label = new JLabel(name);
-    label.setOpaque(true);
-    label.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
-    label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    label.addMouseListener(
-        new MouseAdapter() {
-          @Override
-          public void mousePressed(MouseEvent e) {
-            if (e.isPopupTrigger()) {
-              popup(e, id, label);
-              return;
-            }
-            if (e.getButton() == MouseEvent.BUTTON1) {
-              if (e.getClickCount() == 2) {
-                startEdit(id, label);
-              } else {
-                onSelect.accept(id);
-              }
-            }
-          }
-        });
-    return label;
+  Actions actions() {
+    return actions;
   }
 
-  private void popup(MouseEvent e, String id, JLabel label) {
-    JPopupMenu menu = new JPopupMenu();
-    menu.add("Rename").addActionListener(a -> startEdit(id, label));
-    menu.show(e.getComponent(), e.getX(), e.getY());
+  UiPalette palette() {
+    return palette;
   }
 
-  private void startEdit(String id, JLabel label) {
-    int idx = getComponentZOrder(label);
-    JTextField field =
-        InlineEditor.create(
-            label.getText(),
-            (f, text) -> finishEdit(id, label, f, text),
-            f -> finishEdit(id, label, f, null));
-    remove(label);
-    add(field, idx);
-    revalidate();
-    repaint();
-    field.requestFocusInWindow();
+  int tabCount() {
+    return chipsById.size();
   }
 
-  private void finishEdit(String id, JLabel label, JTextField field, String text) {
-    int idx = getComponentZOrder(field);
-    if (idx < 0) {
-      return;
+  String titleOf(String id) {
+    TabChip chip = chipsById.get(id);
+    return chip == null ? null : chip.title();
+  }
+
+  void startRename(String id) {
+    TabChip chip = chipsById.get(id);
+    if (chip != null) {
+      chip.startEdit(text -> finishRename(id, chip, text));
     }
-    remove(field);
-    add(label, idx);
-    revalidate();
-    repaint();
-    if (text == null) {
-      return;
+  }
+
+  private void finishRename(String id, TabChip chip, String text) {
+    String name = text == null ? "" : text.trim();
+    if (!name.isEmpty() && !name.equals(chip.title())) {
+      chip.setTitle(name);
+      actions.rename().accept(id, name);
     }
-    String newName = text.trim();
-    if (!newName.isBlank() && !newName.equals(label.getText())) {
-      label.setText(newName);
-      onRename.accept(id, newName);
-    }
+  }
+
+  /** A hairline under the bar; the active tab paints over it and merges with the editor. */
+  @Override
+  protected void paintComponent(Graphics g) {
+    super.paintComponent(g);
+    g.setColor(palette.border());
+    g.fillRect(0, getHeight() - 1, getWidth(), 1);
   }
 }

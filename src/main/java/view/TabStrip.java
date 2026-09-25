@@ -1,56 +1,77 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.GridBagLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.function.BooleanSupplier;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-/** The tabs bar plus a pin toggle that keeps it from auto-hiding. */
+/** The auto-hiding tabs bar: the tabs, a "new tab" button and a pin that keeps the bar shown. */
 class TabStrip {
 
-  private final JLabel pin = new JLabel("📌");
-  private final JPanel pinHolder = new JPanel(new GridBagLayout());
+  private final TabHeader header;
+  private final JScrollPane headerScroll;
+  private final FlatButton newTab;
+  private final FlatButton pin;
+  private final JPanel buttons = new JPanel(new GridBagLayout());
   private final JPanel panel = new JPanel(new BorderLayout());
   private final transient Revealer revealer;
-  private Color activeBg = Color.WHITE;
-  private Color inactiveBg = Color.LIGHT_GRAY;
+  private transient TabRequests requests = TabRequests.NONE;
+  private transient Consumer<String> notifier = message -> {};
 
-  TabStrip(JScrollPane headerScroll, JComponent layoutRoot, BooleanSupplier keepOpen) {
-    pin.setOpaque(true);
-    pin.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
-    pin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    pinHolder.setOpaque(true);
-    pinHolder.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
-    pinHolder.add(pin);
+  TabStrip(
+      Consumer<String> select,
+      BiConsumer<String, String> rename,
+      Consumer<List<String>> reorder,
+      JComponent layoutRoot) {
+    this.header =
+        new TabHeader(
+            new TabHeader.Actions(
+                select,
+                rename,
+                reorder,
+                id -> requests.close().accept(id),
+                id -> requests.closeOthers().accept(id),
+                () -> requests.newTab().run()));
+    this.headerScroll = TabPanes.header(header);
+    this.newTab =
+        new FlatButton(VectorIcon.Kind.PLUS, 14, "New tab", () -> requests.newTab().run());
+    this.pin = new FlatButton(VectorIcon.Kind.PIN, 14, "Pin the tabs bar", this::togglePin);
+    Box row = Box.createHorizontalBox();
+    row.add(newTab);
+    row.add(Box.createHorizontalStrut(2));
+    row.add(pin);
+    buttons.add(row);
     headerScroll.addMouseWheelListener(
         e -> {
           var bar = headerScroll.getHorizontalScrollBar();
           bar.setValue(bar.getValue() + e.getUnitsToScroll() * bar.getUnitIncrement());
         });
-    panel.setOpaque(true);
     panel.add(headerScroll, BorderLayout.CENTER);
-    panel.add(pinHolder, BorderLayout.EAST);
-    this.revealer = new Revealer(panel, layoutRoot, keepOpen);
-    pin.addMouseListener(
-        new MouseAdapter() {
-          @Override
-          public void mousePressed(MouseEvent e) {
-            revealer.setPinned(!revealer.isPinned());
-            updatePin();
-          }
-        });
+    panel.add(buttons, BorderLayout.EAST);
+    this.revealer = new Revealer(panel, layoutRoot, header::isEditing);
+  }
+
+  void setRequests(TabRequests requests) {
+    this.requests = requests;
+  }
+
+  /** Where short status messages go ("Tabs bar pinned"). */
+  void setNotifier(Consumer<String> notifier) {
+    this.notifier = notifier;
   }
 
   JComponent component() {
     return panel;
+  }
+
+  TabHeader header() {
+    return header;
   }
 
   Revealer revealer() {
@@ -61,18 +82,24 @@ class TabStrip {
     return revealer.isPinned();
   }
 
-  void applyTheme(Color bg, Color fg) {
-    activeBg = bg;
-    inactiveBg = Colors.contrast(bg, 0.12f);
-    panel.setBackground(inactiveBg);
-    pinHolder.setBackground(inactiveBg);
-    pin.setForeground(fg);
-    updatePin();
+  void applyTheme(UiPalette p) {
+    header.applyTheme(p);
+    panel.setBackground(p.chrome());
+    buttons.setBackground(p.chrome());
+    buttons.setBorder(
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, p.border()),
+            BorderFactory.createEmptyBorder(0, 4, 0, 6)));
+    newTab.applyPalette(p);
+    pin.applyPalette(p);
   }
 
-  private void updatePin() {
-    boolean on = revealer.isPinned();
-    pin.setBackground(on ? activeBg : inactiveBg);
+  private void togglePin() {
+    boolean on = !revealer.isPinned();
+    revealer.setPinned(on);
+    pin.setOn(on);
+    pin.setGlyph(on ? VectorIcon.Kind.PIN_ON : VectorIcon.Kind.PIN);
     pin.setToolTipText(on ? "Tabs bar pinned — click to unpin" : "Pin the tabs bar");
+    notifier.accept(on ? "Tabs bar pinned" : "Tabs bar unpinned");
   }
 }

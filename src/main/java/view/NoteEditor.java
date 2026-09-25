@@ -14,15 +14,18 @@ import model.Theme;
 /** The note editor: a styled {@link JTextPane} whose content round-trips through Markdown. */
 class NoteEditor extends JTextPane {
 
+  private static final int PAD_X = 18;
+  private static final int PAD_Y = 12;
+
   private final transient EditorUndo undo = new EditorUndo(this);
   private final transient MarkdownCache markdownCache = new MarkdownCache(getStyledDocument());
   private int selectedImage = -1;
 
   NoteEditor(String markdown) {
-    setBorder(BorderFactory.createEmptyBorder(0, 1, 0, 0));
+    setBorder(BorderFactory.createEmptyBorder(PAD_Y, PAD_X, PAD_Y, PAD_X));
     setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
     EditorTheme.apply(this, ThemeHolder.current());
-    LineOps.install(this);
+    LineOps.install(this, undo);
     EditorFormat.install(this);
     EditorImages.install(this);
     addCaretListener(e -> clearImageInputAttributes());

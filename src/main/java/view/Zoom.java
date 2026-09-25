@@ -1,7 +1,6 @@
 package view;
 
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
+import java.util.function.Consumer;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
 
@@ -9,26 +8,52 @@ import model.Theme;
 
 final class Zoom {
 
-  private static final int[] LEVELS = {6, 8, 10, 12, 14, 18, 24, 32, 48};
+  static final int[] LEVELS = {8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 40, 48};
 
   private Zoom() {}
 
-  static void install(JFrame frame, AppOptions options) {
-    int mod = ShortcutMask.menu() | InputEvent.SHIFT_DOWN_MASK;
-    bind(frame, KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, mod), "zoom-in", options, 1);
-    bind(frame, KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, mod), "zoom-out", options, -1);
+  /** {@code notify} gets the resulting text size, so zooming gives visible feedback. */
+  static void install(JFrame frame, AppOptions options, Consumer<String> notify) {
+    int mask = ShortcutMask.menu();
+    Consumer<Integer> zoom = delta -> notify.accept(step(options, delta));
+    for (KeyStroke ks : PlatformKeys.zoomIn(mask)) {
+      KeyBindings.bind(frame.getRootPane(), ks, "zoom-in", () -> zoom.accept(1));
+    }
+    for (KeyStroke ks : PlatformKeys.zoomOut(mask)) {
+      KeyBindings.bind(frame.getRootPane(), ks, "zoom-out", () -> zoom.accept(-1));
+    }
   }
 
-  private static void bind(JFrame frame, KeyStroke ks, String name, AppOptions options, int delta) {
-    KeyBindings.bind(frame.getRootPane(), ks, name, () -> step(options, delta));
+  /**
+   * The next level above ({@code delta > 0}) or below {@code size}; {@code size} itself at either
+   * end. Sizes typed in Options between two levels snap to the neighbour in the zoom direction.
+   */
+  static int stepFrom(int size, int delta) {
+    if (delta > 0) {
+      for (int level : LEVELS) {
+        if (level > size) {
+          return level;
+        }
+      }
+      return size;
+    }
+    for (int i = LEVELS.length - 1; i >= 0; i--) {
+      if (LEVELS[i] < size) {
+        return LEVELS[i];
+      }
+    }
+    return size;
   }
 
-  private static void step(AppOptions options, int delta) {
+  static String label(int size) {
+    return "Text size " + size + " pt";
+  }
+
+  private static String step(AppOptions options, int delta) {
     Theme t = ThemeHolder.current();
-    int idx = nearestIndex(t.fontSize());
-    int next = Math.max(0, Math.min(LEVELS.length - 1, idx + delta));
-    if (LEVELS[next] == t.fontSize()) {
-      return;
+    int size = stepFrom(t.fontSize(), delta);
+    if (size == t.fontSize()) {
+      return label(size) + (delta > 0 ? " · largest" : " · smallest");
     }
     options.applyTheme(
         new Theme(
@@ -37,21 +62,9 @@ final class Zoom {
             t.caret(),
             t.codeColor(),
             t.fontFamily(),
-            LEVELS[next],
+            size,
             t.title(),
             t.alwaysOnTop()));
-  }
-
-  private static int nearestIndex(int size) {
-    int best = 0;
-    int bestDiff = Math.abs(LEVELS[0] - size);
-    for (int i = 1; i < LEVELS.length; i++) {
-      int diff = Math.abs(LEVELS[i] - size);
-      if (diff < bestDiff) {
-        best = i;
-        bestDiff = diff;
-      }
-    }
-    return best;
+    return label(size);
   }
 }

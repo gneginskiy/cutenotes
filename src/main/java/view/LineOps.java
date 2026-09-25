@@ -19,15 +19,31 @@ final class LineOps {
 
   private LineOps() {}
 
-  static void install(JTextComponent area) {
-    int mask = ShortcutMask.menu();
+  static void install(JTextComponent area, EditorUndo undo) {
+    install(area, undo, ShortcutMask.menu());
+  }
+
+  /**
+   * {@code mask} is Cmd on macOS and Ctrl on Windows / Linux ({@link ShortcutMask#menu()}), so
+   * "move line" is Cmd+Shift+↑/↓ on a Mac and Ctrl+Shift+↑/↓ elsewhere.
+   */
+  static void install(JTextComponent area, EditorUndo undo, int mask) {
     int shifted = mask | InputEvent.SHIFT_DOWN_MASK;
     bind(area, KeyEvent.VK_X, mask, EditorClipboard::cutLine);
     bind(area, KeyEvent.VK_C, mask, EditorClipboard::copyLine);
-    bind(area, KeyEvent.VK_D, mask, LineOps::duplicateLine);
+    bind(area, KeyEvent.VK_D, mask, a -> grouped(undo, () -> duplicateLine(a)));
     bind(area, KeyEvent.VK_ENTER, mask, LineOps::insertBlankLines);
-    bind(area, KeyEvent.VK_UP, shifted, a -> moveLine(a, -1));
-    bind(area, KeyEvent.VK_DOWN, shifted, a -> moveLine(a, 1));
+    bind(area, KeyEvent.VK_UP, shifted, a -> LineMover.move(a, undo, -1));
+    bind(area, KeyEvent.VK_DOWN, shifted, a -> LineMover.move(a, undo, 1));
+  }
+
+  private static void grouped(EditorUndo undo, Runnable edit) {
+    undo.beginGroup();
+    try {
+      edit.run();
+    } finally {
+      undo.endGroup();
+    }
   }
 
   private static void bind(JTextComponent area, int key, int mod, Consumer<JTextComponent> action) {
@@ -68,37 +84,6 @@ final class LineOps {
     }
     StyledRuns.insert(doc, at, runs);
     area.setCaretPosition(at + col);
-  }
-
-  @SneakyThrows
-  private static void moveLine(JTextComponent area, int direction) {
-    StyledDocument doc = (StyledDocument) area.getDocument();
-    String text = docText(area);
-    int caret = area.getCaretPosition();
-    int current = Lines.index(text, caret);
-    int other = current + direction;
-    if (other < 0 || other >= Lines.count(text)) {
-      return;
-    }
-    int top = Math.min(current, other);
-    int topStart = Lines.startOffset(text, top);
-    int bottomStart = Lines.startOffset(text, Math.max(current, other));
-    int bottomEnd = Lines.endInclusive(text, bottomStart);
-    boolean bottomHasNewline = text.substring(bottomStart, bottomEnd).endsWith("\n");
-    List<StyledRuns.Run> topRuns = StyledRuns.capture(doc, topStart, bottomStart);
-    List<StyledRuns.Run> bottomRuns = StyledRuns.capture(doc, bottomStart, bottomEnd);
-    int col = caret - Lines.startOffset(text, current);
-    doc.remove(topStart, bottomEnd - topStart);
-    int pos = StyledRuns.insert(doc, topStart, bottomRuns);
-    if (!bottomHasNewline) {
-      doc.insertString(pos, "\n", null);
-      pos++;
-      topRuns = StyledRuns.trimTrailingNewline(topRuns);
-    }
-    StyledRuns.insert(doc, pos, topRuns);
-    int firstBlock = (bottomEnd - bottomStart) + (bottomHasNewline ? 0 : 1);
-    int newStart = direction == -1 ? topStart : topStart + firstBlock;
-    area.setCaretPosition(Math.min(newStart + col, doc.getLength()));
   }
 
   @SneakyThrows

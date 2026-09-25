@@ -23,6 +23,7 @@ final class NoteSession {
     this.sessions = sessions;
     this.tabs = tabs;
     this.autoSaver = new AutoSaver(() -> EdtRead.onEdt(tabs::snapshot), repo, sessions, listener);
+    tabs.strip().setRequests(new TabRequests(this::newTab, this::close, this::closeOthers));
   }
 
   void restore() {
@@ -55,7 +56,12 @@ final class NoteSession {
   }
 
   void closeCurrent() {
-    Tab closed = tabs.closeCurrent();
+    close(tabs.activeId());
+  }
+
+  /** Closes a tab, active or not: its last edits are saved, a blank note is deleted. */
+  void close(String id) {
+    Tab closed = tabs.close(id);
     if (closed == null) {
       return;
     }
@@ -66,15 +72,26 @@ final class NoteSession {
     }
   }
 
-  void reopenLastClosed() {
+  void closeOthers(String keepId) {
+    for (String id : tabs.openIds()) {
+      if (!id.equals(keepId)) {
+        close(id);
+      }
+    }
+    tabs.select(keepId);
+  }
+
+  /** Reopens the most recently closed note that still exists; false when there is none. */
+  boolean reopenLastClosed() {
     String candidate;
     while ((candidate = tabs.popLastClosed()) != null) {
       String id = candidate;
       if (repo.listMeta().stream().anyMatch(m -> m.id().equals(id))) {
         openExisting(id);
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   /** Deletes a note for good; an open tab showing it is closed instead of lingering unsaved. */

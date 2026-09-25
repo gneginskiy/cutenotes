@@ -12,14 +12,15 @@ public record Theme(
     String title,
     boolean alwaysOnTop) {
 
+  /** The "Paper" preset; an uninstalled first-choice font falls back along the preset's list. */
   public static final Theme DEFAULT =
       new Theme(
-          new Color(250, 250, 180),
-          Color.BLACK,
+          ThemePresets.PAPER.bg(),
+          ThemePresets.PAPER.fg(),
           null,
-          new Color(10, 132, 110),
-          "comic sans ms",
-          14,
+          ThemePresets.PAPER.codeColor(),
+          ThemePresets.PAPER.fonts().get(0),
+          15,
           null,
           true);
 }

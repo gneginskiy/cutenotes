@@ -12,8 +12,8 @@ final class Revealer {
 
   private static final int FALLBACK_HEIGHT = 28;
   private static final int AUTO_HIDE_MS = 6000;
-  private static final int ANIM_STEP_MS = 12;
-  private static final int ANIM_STEP_PX = 3;
+  private static final int FRAME_MS = 10;
+  private static final int ANIM_MS = 180;
 
   private final JComponent target;
   private final JComponent layoutRoot;
@@ -101,20 +101,18 @@ final class Revealer {
     if (animTimer != null && animTimer.isRunning()) {
       animTimer.stop();
     }
-    int[] cur = {from};
-    int dir = from < to ? 1 : -1;
-    animTimer = new Timer(ANIM_STEP_MS, e -> step(cur, dir, to, onDone, (Timer) e.getSource()));
+    long start = System.nanoTime();
+    animTimer = new Timer(FRAME_MS, e -> frame(from, to, start, onDone, (Timer) e.getSource()));
     animTimer.start();
   }
 
-  private void step(int[] cur, int dir, int to, Runnable onDone, Timer src) {
-    cur[0] += dir * ANIM_STEP_PX;
-    boolean done = dir > 0 ? cur[0] >= to : cur[0] <= to;
-    int h = done ? to : cur[0];
+  private void frame(int from, int to, long start, Runnable onDone, Timer src) {
+    double progress = Easing.progress(start, System.nanoTime(), ANIM_MS);
+    int h = Easing.lerp(from, to, Easing.easeOutCubic(progress));
     target.setPreferredSize(new Dimension(target.getWidth(), h));
     layoutRoot.revalidate();
     layoutRoot.repaint();
-    if (done) {
+    if (progress >= 1) {
       src.stop();
       onDone.run();
     }

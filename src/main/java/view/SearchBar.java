@@ -1,7 +1,6 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -9,7 +8,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
@@ -18,25 +16,20 @@ import model.Theme;
 
 class SearchBar extends JPanel {
 
-  private static final Color MATCH = new Color(255, 235, 60, 150);
-  private static final Color ACTIVE = new Color(255, 150, 0, 220);
-
-  private final JTextField input = new JTextField();
+  private final SearchField field = new SearchField("Find in note");
+  private final HintField input = field.input();
   private final SearchControls controls =
       new SearchControls(() -> step(-1), () -> step(1), this::runSearch, this::close);
   private final Supplier<JTextComponent> areaSupplier;
   private final List<int[]> matches = new ArrayList<>();
-  private final Highlighter.HighlightPainter matchPainter =
-      new DefaultHighlighter.DefaultHighlightPainter(MATCH);
-  private final Highlighter.HighlightPainter activePainter =
-      new DefaultHighlighter.DefaultHighlightPainter(ACTIVE);
+  private Highlighter.HighlightPainter matchPainter;
+  private Highlighter.HighlightPainter activePainter;
   private int activeIdx = -1;
 
   SearchBar(Supplier<JTextComponent> areaSupplier) {
     super(new BorderLayout());
     this.areaSupplier = areaSupplier;
-    setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-    add(input, BorderLayout.CENTER);
+    add(field, BorderLayout.CENTER);
     add(controls, BorderLayout.EAST);
     setVisible(false);
     applyTheme(ThemeHolder.current());
@@ -44,18 +37,17 @@ class SearchBar extends JPanel {
   }
 
   void applyTheme(Theme t) {
-    Color bg = Colors.darken(t.bg(), 18);
-    Color fg = t.fg();
-    setBackground(bg);
+    UiPalette p = UiPalette.of(t);
+    setBackground(p.chrome());
     setOpaque(true);
     setBorder(
         BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.divider(t.bg())),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)));
-    input.setBackground(bg);
-    input.setForeground(fg);
-    input.setCaretColor(t.caret() != null ? t.caret() : Colors.inverse(bg));
-    controls.applyForeground(fg);
+            BorderFactory.createMatteBorder(0, 0, 1, 0, p.border()),
+            BorderFactory.createEmptyBorder(7, 10, 7, 8)));
+    field.applyPalette(p);
+    controls.applyPalette(p);
+    matchPainter = new DefaultHighlighter.DefaultHighlightPainter(p.match());
+    activePainter = new DefaultHighlighter.DefaultHighlightPainter(p.activeMatch());
   }
 
   private void wireInput() {
@@ -127,9 +119,10 @@ class SearchBar extends JPanel {
 
   private void updateCounter() {
     if (matches.isEmpty()) {
-      controls.setCounterText(input.getText().isEmpty() ? "" : "no matches");
+      boolean typed = !input.getText().isEmpty();
+      field.setCounter(typed ? "No results" : "", typed);
     } else {
-      controls.setCounterText((activeIdx + 1) + " of " + matches.size());
+      field.setCounter((activeIdx + 1) + " of " + matches.size(), false);
     }
   }
 

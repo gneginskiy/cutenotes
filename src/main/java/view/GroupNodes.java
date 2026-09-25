@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
@@ -17,28 +16,36 @@ final class GroupNodes {
 
   private GroupNodes() {}
 
+  /**
+   * The tree for {@code data}. While searching, a group is listed only when it holds a match (at
+   * any depth) or its own name matches, in which case all its notes are shown.
+   */
   static DefaultMutableTreeNode root(
-      GroupData data, List<TabMeta> notes, Set<String> openIds, boolean showAll, String ungrouped) {
+      GroupData data, List<TabMeta> notes, NoteFilter filter, String ungrouped) {
     DefaultMutableTreeNode root = new DefaultMutableTreeNode();
     for (Group g : data.childrenOf(null)) {
-      root.add(group(g, data, notes, openIds, showAll));
+      addGroup(root, g, data, notes, filter);
     }
     DefaultMutableTreeNode bucket = new DefaultMutableTreeNode(ungrouped);
-    addNotes(bucket, null, data, notes, openIds, showAll);
-    if (bucket.getChildCount() > 0 || data.groups().isEmpty()) {
+    addNotes(bucket, null, data, notes, filter);
+    if (bucket.getChildCount() > 0 || (data.groups().isEmpty() && !filter.searching())) {
       root.add(bucket);
     }
     return root;
   }
 
-  private static DefaultMutableTreeNode group(
-      Group g, GroupData data, List<TabMeta> notes, Set<String> openIds, boolean showAll) {
+  private static void addGroup(
+      DefaultMutableTreeNode parent, Group g, GroupData data, List<TabMeta> notes, NoteFilter f) {
+    boolean nameHit = f.searching() && f.nameMatches(g.name());
+    NoteFilter inside = nameHit ? f.withQuery("") : f;
     DefaultMutableTreeNode node = new DefaultMutableTreeNode(g);
     for (Group child : data.childrenOf(g.id())) {
-      node.add(group(child, data, notes, openIds, showAll));
+      addGroup(node, child, data, notes, inside);
     }
-    addNotes(node, g.id(), data, notes, openIds, showAll);
-    return node;
+    addNotes(node, g.id(), data, notes, inside);
+    if (!f.searching() || nameHit || node.getChildCount() > 0) {
+      parent.add(node);
+    }
   }
 
   private static void addNotes(
@@ -46,14 +53,10 @@ final class GroupNodes {
       String groupId,
       GroupData data,
       List<TabMeta> notes,
-      Set<String> openIds,
-      boolean showAll) {
+      NoteFilter filter) {
     List<TabMeta> inGroup = new ArrayList<>();
     for (TabMeta meta : notes) {
-      if (!showAll && openIds.contains(meta.id())) {
-        continue;
-      }
-      if (Objects.equals(data.groupOf(meta.id()), groupId)) {
+      if (filter.accepts(meta) && Objects.equals(data.groupOf(meta.id()), groupId)) {
         inGroup.add(meta);
       }
     }
@@ -61,6 +64,13 @@ final class GroupNodes {
     for (TabMeta meta : inGroup) {
       node.add(new DefaultMutableTreeNode(meta, false));
     }
+  }
+
+  /** The user object behind {@code path}; null for no path. */
+  static Object userObject(TreePath path) {
+    return path == null
+        ? null
+        : ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
   }
 
   static List<String> noteOrder(DefaultMutableTreeNode root) {

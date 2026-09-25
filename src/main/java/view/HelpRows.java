@@ -1,52 +1,59 @@
 package view;
 
-/** Static shortcut tables for the {@link HelpDialog}, grouped by section. */
+/**
+ * Static shortcut tables for the {@link HelpDialog}, grouped by section. Alternatives are separated
+ * by {@code " / "}; see {@link ShortcutText} for how a cell is split into keys and phrases.
+ */
 final class HelpRows {
 
   private HelpRows() {}
 
-  static String[][] tabs(String cmd, String alt) {
+  static String[][] tabs(boolean mac) {
+    String cmd = PlatformKeys.menuKey(mac);
     return new String[][] {
-      {"New tab", cmd + "+T"},
-      {"Close tab", cmd + "+W"},
-      {"Reopen last closed", cmd + "+Shift+T"},
-      {"Browse notes & groups…", cmd + "+R"},
-      {"Reorder / regroup notes", "Drag inside " + cmd + "+R"},
-      {"Pin tabs bar", "📌 button"},
-      {"Next tab", alt + "+Tab"},
-      {"Rename tab", "Double-click or right-click"}
+      {"New tab", cmd + "+T / Double-click the bar"},
+      {"Close tab", cmd + "+W / Middle-click"},
+      {"Reopen closed tab", cmd + "+Shift+T"},
+      {"All notes: search & open", cmd + "+R"},
+      {"Next tab", PlatformKeys.nextTabHelp(mac)},
+      {"Rename tab", "Double-click / Right-click"},
+      {"Reorder tabs", "Drag"},
+      {"Keep the tabs bar shown", "Pin button"}
     };
   }
 
-  static String[][] editing(String cmd, String alt) {
+  static String[][] editing(boolean mac) {
+    String cmd = PlatformKeys.menuKey(mac);
     return new String[][] {
-      {"Find in current tab (case-insensitive)", cmd + "+F"},
-      {"Next / previous match", "Enter / Shift+Enter  (or ↓ / ↑)"},
-      {"Back / forward to last spot", cmd + "+" + alt + "+←  /  " + cmd + "+" + alt + "+→"},
+      {"Find in note", cmd + "+F"},
+      {"Next / previous match", "Enter / Shift+Enter"},
+      {"Back / forward to last spot", PlatformKeys.navigationHelp(mac)},
       {"Insert 10 blank lines", cmd + "+Enter"},
-      {"Cut line", cmd + "+X"},
-      {"Copy line", cmd + "+C"},
+      {"Cut / copy line", cmd + "+X / " + cmd + "+C"},
       {"Duplicate line", cmd + "+D"},
-      {"Move line up / down", cmd + "+Shift+↑  /  " + cmd + "+Shift+↓"},
-      {"Undo / Redo", cmd + "+Z  /  " + cmd + "+Shift+Z"}
+      {"Move line up / down", cmd + "+Shift+↑ / " + cmd + "+Shift+↓"},
+      {"Undo / redo", cmd + "+Z / " + cmd + "+Shift+Z"}
     };
   }
 
-  static String[][] formatting(String cmd) {
+  static String[][] formatting(boolean mac) {
+    String cmd = PlatformKeys.menuKey(mac);
     return new String[][] {
-      {"Bold / Italic / Underline", cmd + "+B  /  " + cmd + "+I  /  " + cmd + "+U"},
+      {"Bold / italic / underline", cmd + "+B / " + cmd + "+I / " + cmd + "+U"},
       {"Strikethrough", cmd + "+Shift+S"},
-      {"Code (monospace)", cmd + "+Shift+C"},
-      {"Paste image from clipboard", cmd + "+V"},
-      {"Resize / remove image", "Right-click the image"}
+      {"Code", cmd + "+Shift+C"},
+      {"Paste image", cmd + "+V"},
+      {"Resize / remove image", "Right-click it"}
     };
   }
 
-  static String[][] display(String cmd) {
+  static String[][] display(boolean mac) {
+    String cmd = PlatformKeys.menuKey(mac);
     return new String[][] {
-      {"Zoom in / out", cmd + "+Shift+=  /  " + cmd + "+Shift+-"},
-      {"Toggle menu & tabs strip", "Esc"},
-      {"Options…", cmd + "+O"}
+      {"Zoom in / out", cmd + "+= / " + cmd + "+-"},
+      {"Show menu & tabs bar", "Esc"},
+      {"Options", cmd + "+O"},
+      {"Keyboard shortcuts", "F1"}
     };
   }
 }

@@ -13,6 +13,8 @@ import dao.GroupStore;
 import dao.InstanceLock;
 import dao.SessionStore;
 import dao.TabRepository;
+import model.Theme;
+import view.PlatformLook;
 import view.TabbedNotesUI;
 import view.ThemeHolder;
 
@@ -24,6 +26,9 @@ public final class Main {
   private static InstanceLock lock;
 
   public static void main(String[] args) {
+    Theme theme = new FileOptionsStore().load();
+    PlatformLook.prepare(theme);
+    ThemeHolder.set(theme);
     lock = InstanceLock.tryAcquire(DataDir.resolve());
     if (lock == null) {
       JOptionPane.showMessageDialog(
@@ -39,7 +44,6 @@ public final class Main {
     TabRepository repo = new FileTabRepository();
     SessionStore sessions = new FileSessionStore();
     GroupStore groups = new FileGroupStore();
-    ThemeHolder.set(new FileOptionsStore().load());
     SwingUtilities.invokeLater(() -> new TabbedNotesUI(TITLE, repo, sessions, groups));
   }
 }

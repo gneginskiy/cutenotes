@@ -21,19 +21,20 @@ class GroupTree extends JTree {
   static final String UNGROUPED = "Ungrouped";
 
   private final transient List<TabMeta> notes;
-  private final transient Set<String> openIds;
   private transient GroupData data;
   private transient BiConsumer<String, String> onRename = (id, name) -> {};
-  private boolean showAll = true;
+  private transient NoteFilter filter;
 
   GroupTree(List<TabMeta> notes, Set<String> openIds, GroupData data) {
     this.notes =
         new ArrayList<>(
             notes.stream().sorted(Comparator.comparing(TabMeta::lastModified).reversed()).toList());
-    this.openIds = openIds;
+    this.filter = NoteFilter.all(openIds);
     this.data = data;
     setRootVisible(false);
     setShowsRootHandles(true);
+    setRowHeight(26);
+    putClientProperty("JTree.lineStyle", "None");
     getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
     NoteCellRenderer renderer = new NoteCellRenderer(openIds);
     setCellRenderer(renderer);
@@ -52,8 +53,31 @@ class GroupTree extends JTree {
   }
 
   void setShowAll(boolean all) {
-    this.showAll = all;
+    this.filter = filter.withShowOpen(all);
     rebuild();
+  }
+
+  void setQuery(String query) {
+    this.filter = filter.withQuery(query);
+    rebuild();
+  }
+
+  /** Selects the first note in tree order; returns it, or null when nothing is listed. */
+  TabMeta selectFirstNote() {
+    for (int row = 0; row < getRowCount(); row++) {
+      TreePath path = getPathForRow(row);
+      if (GroupNodes.userObject(path) instanceof TabMeta meta) {
+        setSelectionPath(path);
+        scrollPathToVisible(path);
+        return meta;
+      }
+    }
+    return null;
+  }
+
+  /** While a search narrows the list, dragging would reorder against notes that are hidden. */
+  boolean searching() {
+    return filter.searching();
   }
 
   void setOnRename(BiConsumer<String, String> handler) {
@@ -73,27 +97,8 @@ class GroupTree extends JTree {
     return userObject() instanceof Group group ? group.id() : null;
   }
 
-  String dropTargetGroupId(TreePath path) {
-    if (path == null) {
-      return null;
-    }
-    Object target = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
-    if (target instanceof Group group) {
-      return group.id();
-    }
-    return target instanceof TabMeta meta ? data.groupOf(meta.id()) : null;
-  }
-
   List<String> currentNoteOrder() {
     return GroupNodes.noteOrder((DefaultMutableTreeNode) getModel().getRoot());
-  }
-
-  String dropBeforeNoteId(TreePath path) {
-    if (path == null) {
-      return null;
-    }
-    Object target = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
-    return target instanceof TabMeta meta ? meta.id() : null;
   }
 
   void editGroup(String id) {
@@ -119,21 +124,17 @@ class GroupTree extends JTree {
   }
 
   private Object userObject() {
-    TreePath path = getSelectionPath();
-    return path == null
-        ? null
-        : ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+    return GroupNodes.userObject(getSelectionPath());
   }
 
   private void commitEdit(TreePath path, Object newValue) {
-    Object userObject = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
-    if (userObject instanceof Group group) {
+    if (GroupNodes.userObject(path) instanceof Group group) {
       SwingUtilities.invokeLater(() -> onRename.accept(group.id(), String.valueOf(newValue)));
     }
   }
 
   private void rebuild() {
-    DefaultMutableTreeNode root = GroupNodes.root(data, notes, openIds, showAll, UNGROUPED);
+    DefaultMutableTreeNode root = GroupNodes.root(data, notes, filter, UNGROUPED);
     setModel(new GroupTreeModel(root, this::commitEdit));
     for (int i = 0; i < getRowCount(); i++) {
       expandRow(i);

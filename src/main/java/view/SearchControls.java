@@ -1,66 +1,44 @@
 package view;
 
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Insets;
-import javax.swing.AbstractButton;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
+import java.awt.Font;
 import javax.swing.JPanel;
-import javax.swing.JToggleButton;
 
-/** Trailing controls of the {@link SearchBar}: match counter, case toggle and navigation. */
+/** Trailing controls of the {@link SearchBar}: case toggle, previous / next and close. */
 class SearchControls extends JPanel {
 
-  private final JLabel counter = new JLabel();
-  private final JToggleButton caseToggle = new JToggleButton("Aa");
-  private final JButton prevButton = new JButton("˄");
-  private final JButton nextButton = new JButton("˅");
-  private final JButton closeButton = new JButton("✕");
+  private final FlatButton caseToggle;
+  private final FlatButton prevButton;
+  private final FlatButton nextButton;
+  private final FlatButton closeButton;
 
   SearchControls(Runnable onPrev, Runnable onNext, Runnable onToggle, Runnable onClose) {
-    super(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+    super(new FlowLayout(FlowLayout.RIGHT, 2, 0));
     setOpaque(false);
-    counter.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 6));
-    prevButton.setToolTipText("Previous match (Shift+Enter)");
-    nextButton.setToolTipText("Next match (Enter)");
-    caseToggle.setToolTipText("Match case");
-    closeButton.setToolTipText("Close (Esc)");
-    for (AbstractButton b : buttons()) {
-      b.setFocusable(false);
-      b.setMargin(new Insets(1, 2, 1, 2));
-      b.putClientProperty("JButton.buttonType", "square");
-      b.setPreferredSize(new Dimension(42, 24));
-    }
-    prevButton.addActionListener(e -> onPrev.run());
-    nextButton.addActionListener(e -> onNext.run());
-    caseToggle.addActionListener(e -> onToggle.run());
-    closeButton.addActionListener(e -> onClose.run());
-    add(counter);
+    caseToggle = new FlatButton("Aa", "Match case", () -> toggleCase(onToggle));
+    prevButton =
+        new FlatButton(VectorIcon.Kind.CHEVRON_UP, 14, "Previous match (Shift+Enter)", onPrev);
+    nextButton = new FlatButton(VectorIcon.Kind.CHEVRON_DOWN, 14, "Next match (Enter)", onNext);
+    closeButton = new FlatButton(VectorIcon.Kind.CLOSE, 14, "Close (Esc)", onClose);
+    caseToggle.setFont(UiFonts.ui(Font.BOLD, 12f));
     add(caseToggle);
     add(prevButton);
     add(nextButton);
     add(closeButton);
   }
 
+  private void toggleCase(Runnable onToggle) {
+    caseToggle.setOn(!caseToggle.isOn());
+    onToggle.run();
+  }
+
   boolean isCaseSensitive() {
-    return caseToggle.isSelected();
+    return caseToggle.isOn();
   }
 
-  void setCounterText(String text) {
-    counter.setText(text);
-  }
-
-  void applyForeground(Color fg) {
-    counter.setForeground(fg);
-    for (AbstractButton b : buttons()) {
-      b.setForeground(fg);
+  void applyPalette(UiPalette p) {
+    for (FlatButton b : new FlatButton[] {caseToggle, prevButton, nextButton, closeButton}) {
+      b.applyPalette(p);
     }
-  }
-
-  private AbstractButton[] buttons() {
-    return new AbstractButton[] {caseToggle, prevButton, nextButton, closeButton};
   }
 }
