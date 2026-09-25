@@ -29,20 +29,23 @@ Or, with Java 21+ installed, download the jar and double-click it.
 
 ## Download
 
+The latest build, straight from [GitHub Releases](https://github.com/gneginskiy/cutenotes/releases/latest):
+
 | System | Download | Start |
 |--------|----------|-------|
-| macOS (Apple silicon) | [cutenotes-2026-09-26-2-mac-arm64.zip](releases/mac-arm/cutenotes-2026-09-26-2-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
-| Windows x64 | [cutenotes-2026-09-26-2-windows-x64.zip](releases/windows/cutenotes-2026-09-26-2-windows-x64.zip) | Unzip, double-click `cuteNotes.bat` |
-| Linux x64 | [cutenotes-2026-09-26-2-linux-x64.tar.gz](releases/linux/cutenotes-2026-09-26-2-linux-x64.tar.gz) | `tar -xzf`, run `./cutenotes/cutenotes` |
-| Any OS with Java 21+ | [cutenotes-2026-09-26-2.jar](releases/cutenotes-2026-09-26-2.jar) | Double-click, or `java -jar` |
+| macOS (Apple silicon) | [cutenotes-mac-arm64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
+| Windows x64 | [cutenotes-windows-x64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-windows-x64.zip) | Unzip, run `cuteNotes\cuteNotes.exe` |
+| Linux x64 | [cutenotes-linux-x64.tar.gz](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-x64.tar.gz) | `tar -xzf`, run `cuteNotes/bin/cuteNotes` |
+| Any OS with Java 21+ | [cutenotes.jar](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes.jar) | Double-click, or `java -jar cutenotes.jar` |
+
+Every version is on the [releases page](https://github.com/gneginskiy/cutenotes/releases).
+Jars of releases before 2026-09-26-3 are kept in [releases/](releases).
 
 ## How it works
 
 The apps keep your notes, session and options in `cutenotes_data/` in your home folder, so updating the app keeps them.
 The plain jar is portable: its `cutenotes_data/` folder sits next to the jar.
 Moving from the jar to an app? Copy that folder into your home folder.
-
-Build all four downloads with `scripts/build-releases.sh <YYYY-MM-DD>` (on an Apple-silicon Mac with Corretto).
 
 ## Shortcuts
 
@@ -66,7 +69,7 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 | Strikethrough               | `Cmd+Shift+S`                 | `Ctrl+Shift+S`                  |
 | Code (monospace)            | `Cmd+Shift+C`                 | `Ctrl+Shift+C`                  |
 | Paste image                 | `Cmd+V`                       | `Ctrl+V`                        |
-| Toggle status bar / Help    | `Esc` / `F1`                  | `Esc` / `F1`                    |
+| Show menu & tabs bar / Help | `Esc` / `F1`                  | `Esc` / `F1`                    |
 
 ## Build
 
@@ -74,9 +77,19 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 mvn clean install
 ```
 
-Output: `target/cutenotes.jar`.
+Output: `target/cutenotes.jar`. `scripts/package.sh` then packages the app with a bundled runtime for
+the OS you run it on (into `target/dist/`).
+
+Every push to `develop` is built, tested and packaged for macOS, Windows and Linux by
+[GitHub Actions](.github/workflows/release.yml) and published as a GitHub Release; binaries are not
+committed to the repository.
 
 # Release notes
+2026-Sep-26-3 (details in [docs/release_notes](docs/release_notes/2026-09-26-github-releases.md)):
+- Downloads now live on [GitHub Releases](https://github.com/gneginskiy/cutenotes/releases), built by GitHub Actions on every push to `develop`, natively on macOS, Windows and Linux
+- Windows starts with `cuteNotes.exe` (no more `.bat`); Linux with `cuteNotes/bin/cuteNotes`
+- Binaries are no longer stored in git; the platform archives were removed from the history
+
 2026-Sep-26-2 (details in [docs/release_notes](docs/release_notes/2026-09-26-screenshots-and-text-layout.md)):
 - Long words without spaces (keys, hashes, URLs) now wrap instead of scrolling the note sideways
 - Even line rhythm: the first line of a note gets the same line spacing as the rest
@@ -85,7 +98,7 @@ Output: `target/cutenotes.jar`.
 2026-Sep-26-1 (details in [docs/release_notes](docs/release_notes/2026-09-26-native-builds.md)):
 - Downloads for macOS (Apple silicon), Windows x64 and Linux x64 that bundle their own Java runtime: no JDK needed
 - The apps keep notes in `~/cutenotes_data`, so updating an app never deletes them; the plain jar stays portable
-- `scripts/build-releases.sh` builds the jar and all three native downloads in one go
+- One script built the jar and all three native downloads (replaced by GitHub Actions in 2026-Sep-26-3)
 
 2026-Sep-26 (details in [docs/release_notes](docs/release_notes)):
 - Six theme presets in Options (Paper, Graphite, Midnight, Sepia, Sticky, Terminal); new default "Paper" look

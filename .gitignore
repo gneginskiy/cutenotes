@@ -37,3 +37,10 @@ build/
 
 ### Claude Code ###
 .claude/
+
+### Release binaries: CI publishes them as GitHub Releases, they are never committed ###
+### (the jars already in releases/ stay tracked as history) ###
+/releases/*.jar
+/releases/mac-arm/
+/releases/windows/
+/releases/linux/

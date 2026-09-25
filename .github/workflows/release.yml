@@ -1,0 +1,88 @@
+# Every push to develop builds and tests the jar, packages the app natively on macOS (Apple
+# silicon), Windows x64 and Linux x64 with a bundled Java runtime, smoke-tests the Linux package
+# and publishes everything as a GitHub Release (tag v<date>, v<date>-1, …).
+# Binaries are never committed to git: README links point to releases/latest/download/<file>.
+name: Build and release
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Releases are published one after another, so two quick pushes never race for the same tag.
+concurrency:
+  group: release-develop
+  cancel-in-progress: false
+
+jobs:
+  jar:
+    name: Jar (tests, checkstyle, coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '25'
+          cache: maven
+      - run: mvn -B -ntp clean install
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jar
+          path: target/cutenotes.jar
+          if-no-files-found: error
+
+  native:
+    name: Package ${{ matrix.platform }}
+    needs: jar
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-14
+            platform: mac-arm64
+          - os: windows-latest
+            platform: windows-x64
+          - os: ubuntu-latest
+            platform: linux-x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '25'
+      - uses: actions/download-artifact@v4
+        with:
+          name: jar
+          path: target
+      - run: scripts/package.sh target/cutenotes.jar dist
+      - name: Smoke test
+        if: matrix.platform == 'linux-x64'
+        run: scripts/smoke-test-linux.sh dist/cutenotes-linux-x64.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [jar, native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: scripts/publish-release.sh dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

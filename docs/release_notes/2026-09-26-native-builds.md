@@ -1,5 +1,7 @@
 # cuteNotes: native builds without a JDK (macOS arm, Windows x64, Linux x64)
 
+> **Superseded in 2026-09-26-3** ([github-releases](2026-09-26-github-releases.md)): builds are made by GitHub Actions and published as GitHub Releases, not committed to `releases/`. `scripts/build-releases.sh` was replaced by `scripts/package.sh`, and the archives described below were removed from the git history.
+
 Date: 2026-09-26 · branch `develop` · `mvn clean install`: all 187 tests pass, 0 checkstyle violations, coverage above the threshold.
 
 ## What
