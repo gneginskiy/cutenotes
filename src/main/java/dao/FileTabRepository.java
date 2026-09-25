@@ -16,9 +16,6 @@ import model.TabMeta;
 
 public class FileTabRepository implements TabRepository {
 
-  private static final String PREFIX = "note_";
-  private static final String SUFFIX = ".txt";
-
   private final Path baseDir;
 
   public FileTabRepository() {
@@ -37,7 +34,7 @@ public class FileTabRepository implements TabRepository {
     }
     List<TabMeta> result = new ArrayList<>();
     try (Stream<Path> files = Files.list(baseDir)) {
-      for (Path p : files.filter(this::isNoteFile).toList()) {
+      for (Path p : files.filter(FileTabRepository::isNoteFile).toList()) {
         result.add(metaOf(p));
       }
     }
@@ -67,12 +64,12 @@ public class FileTabRepository implements TabRepository {
   @SneakyThrows
   public void save(String id, String name, String content) {
     Files.createDirectories(baseDir);
-    Path target = baseDir.resolve(PREFIX + id + "_" + sanitize(name) + SUFFIX);
+    Path target = baseDir.resolve(NoteFileNames.of(id, name));
     Path existing = findFileById(id);
     if (existing != null && !existing.equals(target)) {
       Files.move(existing, target, StandardCopyOption.REPLACE_EXISTING);
     }
-    Files.writeString(target, name + "\n" + content, StandardCharsets.UTF_8);
+    AtomicFiles.write(target, name + "\n" + content);
   }
 
   @Override
@@ -94,41 +91,25 @@ public class FileTabRepository implements TabRepository {
     if (!Files.isDirectory(baseDir)) {
       return null;
     }
-    String prefix = PREFIX + id;
     try (Stream<Path> s = Files.list(baseDir)) {
-      return s.filter(p -> matchesId(p, prefix)).findFirst().orElse(null);
+      return s.filter(p -> NoteFileNames.matchesId(p.getFileName().toString(), id))
+          .findFirst()
+          .orElse(null);
     }
   }
 
-  private static boolean matchesId(Path p, String prefix) {
-    String n = p.getFileName().toString();
-    if (!n.startsWith(prefix) || !n.endsWith(SUFFIX)) {
-      return false;
-    }
-    String rest = n.substring(prefix.length());
-    return rest.equals(SUFFIX) || rest.startsWith("_");
-  }
-
-  private boolean isNoteFile(Path p) {
-    String n = p.getFileName().toString();
-    return n.startsWith(PREFIX) && n.endsWith(SUFFIX);
+  private static boolean isNoteFile(Path p) {
+    return NoteFileNames.isNote(p.getFileName().toString());
   }
 
   @SneakyThrows
-  private TabMeta metaOf(Path p) {
-    String fn = p.getFileName().toString();
-    String stripped = fn.substring(PREFIX.length(), fn.length() - SUFFIX.length());
-    int sep = stripped.indexOf('_');
-    String id = sep < 0 ? stripped : stripped.substring(0, sep);
+  private static TabMeta metaOf(Path p) {
     String name;
     try (BufferedReader br = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
       String first = br.readLine();
       name = first == null ? "" : first;
     }
+    String id = NoteFileNames.idOf(p.getFileName().toString(), name);
     return new TabMeta(id, name, Files.getLastModifiedTime(p).toInstant());
-  }
-
-  private static String sanitize(String name) {
-    return name.replaceAll("[\\\\/:*?\"<>|\\r\\n]", "_");
   }
 }

@@ -8,36 +8,32 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
-import javax.swing.WindowConstants;
 
 import dao.GroupStore;
 import dao.SessionStore;
 import dao.TabRepository;
-import model.Tab;
 import model.Theme;
-import util.AutoSaver;
 
 public class TabbedNotesUI extends JFrame {
 
   private final TabRepository repo;
-  private final SessionStore sessions;
   private final GroupStore groups;
   private final String defaultTitle;
   private final TabsPane tabs = new TabsPane();
   private final SearchBar searchBar = new SearchBar(tabs::activeArea);
   private final AppOptions appOptions = new AppOptions(this, this::applyTheme);
   private final Runnable smartReveal = () -> tabs.revealer().revealIf(!tabs.openIds().isEmpty());
-  private final AutoSaver autoSaver;
+  private final SaveStatus saveStatus;
+  private final NoteSession session;
 
   public TabbedNotesUI(
       String defaultTitle, TabRepository repo, SessionStore sessions, GroupStore groups) {
     super(defaultTitle);
     this.defaultTitle = defaultTitle;
     this.repo = repo;
-    this.sessions = sessions;
     this.groups = groups;
-    this.autoSaver = new AutoSaver(() -> EdtRead.onEdt(tabs::snapshot), repo);
-    setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    this.saveStatus = new SaveStatus(this::setTitle, SaveStatus.dialogOver(this), defaultTitle);
+    this.session = new NoteSession(repo, sessions, tabs, saveStatus);
     setSize(500, 400);
     WindowPlacement.centerOnScreen(this);
     new Chrome(this, buildMenu(), tabs, searchBar);
@@ -45,30 +41,24 @@ public class TabbedNotesUI extends JFrame {
     Help.install(this);
     tabs.addBelowHeader(searchBar);
     add(tabs.component());
-    restoreSession();
+    session.restore();
     applyTheme(ThemeHolder.current());
-    Runtime.getRuntime().addShutdownHook(new Thread(this::persist));
-    autoSaver.start();
+    AppExit.install(this, session::persist, SaveStatus.askQuitUnsaved(this));
+    session.start();
     setVisible(true);
-  }
-
-  private void persist() {
-    autoSaver.flush();
-    sessions.write(TabCleanup.pruneEmpty(EdtRead.onEdt(tabs::snapshot), repo));
   }
 
   private JMenuBar buildMenu() {
     int mask = ShortcutMask.menu();
     JMenuBar bar = new ThemedMenuBar();
     JMenu menu = new ThemedMenu("Menu");
-    menu.add(
-        item("New tab", ks(KeyEvent.VK_T, mask), () -> tabs.openTab(repo.newId(), "untitled", "")));
+    menu.add(item("New tab", ks(KeyEvent.VK_T, mask), session::newTab));
     menu.add(
         item(
             "Reopen last",
             ks(KeyEvent.VK_T, mask | InputEvent.SHIFT_DOWN_MASK),
-            this::reopenLastClosed));
-    menu.add(item("Close tab", ks(KeyEvent.VK_W, mask), this::closeCurrentTab));
+            session::reopenLastClosed));
+    menu.add(item("Close tab", ks(KeyEvent.VK_W, mask), session::closeCurrent));
     menu.add(item("Reopen tab...", ks(KeyEvent.VK_R, mask), this::reopenTab));
     menu.add(item("Next tab", ks(KeyEvent.VK_TAB, InputEvent.ALT_DOWN_MASK), tabs::selectNext));
     menu.add(item("Next tab", ks(KeyEvent.VK_TAB, InputEvent.CTRL_DOWN_MASK), tabs::selectNext));
@@ -90,56 +80,21 @@ public class TabbedNotesUI extends JFrame {
     return MenuItems.make(getRootPane(), () -> {}, label, acc, action);
   }
 
-  private void restoreSession() {
-    tabs.setDefaultContent(repo.load(TabsPane.DEFAULT_ID).content());
-    for (String id : sessions.read()) {
-      Tab tab = repo.load(id);
-      if (tab.content().isBlank()) {
-        repo.delete(id);
-      } else {
-        tabs.openTab(id, tab.name(), tab.content());
-      }
-    }
-  }
-
-  private void openExisting(String id) {
-    Tab tab = repo.load(id);
-    tabs.openTab(id, tab.name(), tab.content());
-  }
-
   private void applyTheme(Theme t) {
-    setTitle(t.title() != null && !t.title().isBlank() ? t.title() : defaultTitle);
+    saveStatus.setTitle(t.title() != null && !t.title().isBlank() ? t.title() : defaultTitle);
     setAlwaysOnTop(t.alwaysOnTop());
     tabs.applyTheme(t);
     MenuTheme.apply(getJMenuBar(), t);
     searchBar.applyTheme(t);
   }
 
-  private void closeCurrentTab() {
-    Tab closed = tabs.closeCurrent();
-    if (closed == null) {
-      return;
-    }
-    if (closed.content().isBlank()) {
-      repo.delete(closed.id());
-    } else {
-      repo.save(closed.id(), closed.name(), closed.content());
-    }
-  }
-
-  private void reopenLastClosed() {
-    String candidate;
-    while ((candidate = tabs.popLastClosed()) != null) {
-      String id = candidate;
-      if (repo.listMeta().stream().anyMatch(m -> m.id().equals(id))) {
-        openExisting(id);
-        return;
-      }
-    }
-  }
-
   private void reopenTab() {
-    new NotesBrowserDialog(this, repo, groups, new HashSet<>(tabs.openIds()), this::openExisting)
+    new NotesBrowserDialog(
+            this,
+            repo,
+            groups,
+            new HashSet<>(tabs.openIds()),
+            new NotesBrowserDialog.Callbacks(session::openExisting, session::delete))
         .setVisible(true);
   }
 }

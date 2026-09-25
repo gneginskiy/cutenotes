@@ -50,9 +50,7 @@ public class FileOptionsStore implements OptionsStore {
   }
 
   @Override
-  @SneakyThrows
   public void save(Theme t) {
-    Files.createDirectories(file.getParent());
     StringBuilder text = new StringBuilder();
     text.append(BG).append('=').append(toHex(t.bg())).append('\n');
     text.append(FG).append('=').append(toHex(t.fg())).append('\n');
@@ -68,7 +66,7 @@ public class FileOptionsStore implements OptionsStore {
       text.append(TITLE).append('=').append(t.title()).append('\n');
     }
     text.append(ALWAYS_ON_TOP).append('=').append(t.alwaysOnTop()).append('\n');
-    Files.writeString(file, text.toString(), StandardCharsets.UTF_8);
+    AtomicFiles.write(file, text.toString());
   }
 
   private static Map<String, String> parse(String content) {

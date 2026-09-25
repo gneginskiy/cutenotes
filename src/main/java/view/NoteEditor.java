@@ -2,56 +2,56 @@ package view;
 
 import java.awt.Graphics;
 import java.awt.KeyboardFocusManager;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.util.Collections;
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
-import javax.swing.KeyStroke;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
-import javax.swing.undo.UndoManager;
 
 import model.Theme;
 
 /** The note editor: a styled {@link JTextPane} whose content round-trips through Markdown. */
 class NoteEditor extends JTextPane {
 
-  private final transient UndoManager undo = new UndoManager();
+  private final transient EditorUndo undo = new EditorUndo(this);
+  private final transient MarkdownCache markdownCache = new MarkdownCache(getStyledDocument());
   private int selectedImage = -1;
 
   NoteEditor(String markdown) {
     setBorder(BorderFactory.createEmptyBorder(0, 1, 0, 0));
     setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
     EditorTheme.apply(this, ThemeHolder.current());
-    getDocument().addUndoableEditListener(e -> undo.addEdit(e.getEdit()));
-    installUndoRedo();
     LineOps.install(this);
     EditorFormat.install(this);
     EditorImages.install(this);
+    addCaretListener(e -> clearImageInputAttributes());
     setMarkdown(markdown);
     CaretHistory.install(this);
   }
 
+  /**
+   * The styled editor kit copies the character attributes under the caret into the typing
+   * attributes. Next to an inline image that would make freshly typed text inherit the image's
+   * icon/path — producing phantom selection frames and duplicate {@code ![](...)} on save. Strip
+   * them so typing is always plain.
+   */
+  private void clearImageInputAttributes() {
+    MutableAttributeSet in = getInputAttributes();
+    in.removeAttribute(StyleConstants.IconAttribute);
+    in.removeAttribute(ImageAttr.PATH);
+    in.removeAttribute(ImageAttr.SOURCE);
+    in.removeAttribute(ImageAttr.WIDTH);
+    in.removeAttribute(ImageAttr.HEIGHT);
+  }
+
   void applyTheme(Theme t) {
     EditorTheme.apply(this, t);
-    SimpleAttributeSet on = new SimpleAttributeSet();
-    EditorFormat.styleCode(on, true, t);
-    SimpleAttributeSet off = new SimpleAttributeSet();
-    EditorFormat.styleCode(off, false, t);
-    StyledDocument doc = getStyledDocument();
-    for (int i = 0; i < doc.getLength(); i++) {
-      AttributeSet a = doc.getCharacterElement(i).getAttributes();
-      if (a.getAttribute(EditorFormat.CODE) == Boolean.TRUE) {
-        doc.setCharacterAttributes(i, 1, on, false);
-      } else if (a.isDefined(StyleConstants.Foreground) || a.isDefined(StyleConstants.Background)) {
-        doc.setCharacterAttributes(i, 1, off, false);
-      }
-    }
+    CodeRestyle.apply(getStyledDocument(), t);
+  }
+
+  EditorUndo undoHistory() {
+    return undo;
   }
 
   void setSelectedImage(int offset) {
@@ -77,45 +77,12 @@ class NoteEditor extends JTextPane {
   }
 
   String markdown() {
-    return DocumentMarkdown.toMarkdown(getStyledDocument());
+    return markdownCache.get();
   }
 
   final void setMarkdown(String markdown) {
     DocumentMarkdown.applyMarkdown(getStyledDocument(), markdown);
     setCaretPosition(0);
-    undo.discardAllEdits();
-  }
-
-  private void installUndoRedo() {
-    int mask = ShortcutMask.menu();
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_Z, mask), this::undo);
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_Y, mask), this::redo);
-    bind(KeyStroke.getKeyStroke(KeyEvent.VK_Z, mask | InputEvent.SHIFT_DOWN_MASK), this::redo);
-  }
-
-  private void undo() {
-    if (undo.canUndo()) {
-      undo.undo();
-    }
-  }
-
-  private void redo() {
-    if (undo.canRedo()) {
-      undo.redo();
-    }
-  }
-
-  private void bind(KeyStroke ks, Runnable action) {
-    Object name = ks.toString();
-    getInputMap().put(ks, name);
-    getActionMap()
-        .put(
-            name,
-            new AbstractAction() {
-              @Override
-              public void actionPerformed(ActionEvent e) {
-                action.run();
-              }
-            });
+    undo.discardAll();
   }
 }

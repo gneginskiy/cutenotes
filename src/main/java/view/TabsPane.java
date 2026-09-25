@@ -1,7 +1,6 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.CardLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,38 +8,29 @@ import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
 
 import model.Tab;
 import model.Theme;
 
 public class TabsPane {
 
-  public static final String DEFAULT_ID = "__default__";
-
   private final JPanel root = new JPanel(new BorderLayout());
   private final JPanel inner = new JPanel(new BorderLayout());
-  private final JPanel content = new JPanel();
-  private final CardLayout cards = new CardLayout();
+  private final TabCards cards = new TabCards();
   private final List<String> order = new ArrayList<>();
   private final Map<String, TabState> stateById = new HashMap<>();
   private final TabHeader header =
       new TabHeader(this::select, (id, name) -> stateById.get(id).name = name, this::reorder);
   private final JScrollPane headerScroll = TabPanes.header(header);
   private final TabHistory history = new TabHistory();
-  private final NoteEditor defaultArea = new NoteEditor("");
-  private final JScrollPane defaultPane = TabPanes.content(defaultArea);
+  private final NoteEditor defaultArea = cards.defaultArea();
   private final TabStrip tabStrip = new TabStrip(headerScroll, root, header::isEditing);
   private String activeId;
 
   public TabsPane() {
-    content.setLayout(cards);
-    content.setBackground(ThemeHolder.current().bg());
     root.add(tabStrip.component(), BorderLayout.NORTH);
-    inner.add(content, BorderLayout.CENTER);
+    inner.add(cards.component(), BorderLayout.CENTER);
     root.add(inner, BorderLayout.CENTER);
-    content.add(defaultPane, DEFAULT_ID);
-    cards.show(content, DEFAULT_ID);
   }
 
   public JPanel component() {
@@ -72,6 +62,10 @@ public class TabsPane {
     return TabsOps.snapshot(order, stateById, defaultArea);
   }
 
+  Tab snapshotOf(String id) {
+    return TabsOps.snapshotOf(id, stateById, defaultArea);
+  }
+
   public void openTab(String id, String name, String text) {
     if (stateById.containsKey(id)) {
       select(id);
@@ -79,7 +73,7 @@ public class TabsPane {
     }
     NoteEditor area = new NoteEditor(text);
     JScrollPane pane = TabPanes.content(area);
-    content.add(pane, id);
+    cards.add(pane, id);
     header.addTab(id, name);
     order.add(id);
     stateById.put(id, new TabState(name, area, pane));
@@ -87,24 +81,29 @@ public class TabsPane {
   }
 
   public Tab closeCurrent() {
-    if (activeId == null) {
+    return close(activeId);
+  }
+
+  /** Closes the tab with {@code id} (active or not); returns its final state, or null. */
+  Tab close(String id) {
+    TabState s = id == null ? null : stateById.remove(id);
+    if (s == null) {
       return null;
     }
-    String closing = activeId;
-    int idx = order.indexOf(closing);
-    history.record(closing);
-    TabState s = stateById.remove(closing);
-    order.remove(closing);
-    content.remove(s.pane);
-    header.removeTab(closing);
-    activeId = null;
-    if (order.isEmpty()) {
-      cards.show(content, DEFAULT_ID);
-      focusLater(defaultArea);
-    } else {
-      select(order.get(Math.max(0, idx - 1)));
+    int idx = order.indexOf(id);
+    history.record(id);
+    order.remove(id);
+    cards.remove(s.pane);
+    header.removeTab(id);
+    if (id.equals(activeId)) {
+      activeId = null;
+      if (order.isEmpty()) {
+        cards.showDefault();
+      } else {
+        select(order.get(Math.max(0, idx - 1)));
+      }
     }
-    return new Tab(closing, s.name, s.area.markdown());
+    return new Tab(id, s.name, s.area.markdown());
   }
 
   public String popLastClosed() {
@@ -128,18 +127,14 @@ public class TabsPane {
     tabStrip.applyTheme(t.bg(), t.fg());
   }
 
-  private void select(String id) {
+  void select(String id) {
     if (id == null || !stateById.containsKey(id)) {
       return;
     }
     activeId = id;
-    cards.show(content, id);
+    cards.show(id);
     header.selectTab(id);
-    focusLater(stateById.get(id).area);
-  }
-
-  private static void focusLater(NoteEditor area) {
-    SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(area::requestFocusInWindow));
+    TabPanes.focusLater(stateById.get(id).area);
   }
 
   private void reorder(List<String> ids) {

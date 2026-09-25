@@ -4,11 +4,9 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import javax.swing.JOptionPane;
 
 import dao.GroupStore;
-import dao.TabRepository;
 import model.GroupData;
 import model.TabMeta;
 
@@ -18,24 +16,18 @@ class NoteGroupActions {
   private final Component parent;
   private final GroupTree tree;
   private final transient GroupStore store;
-  private final transient TabRepository repo;
-  private final transient Consumer<String> onOpen;
+  private final transient NotesBrowserDialog.Callbacks callbacks;
 
   NoteGroupActions(
-      Component parent,
-      GroupTree tree,
-      GroupStore store,
-      TabRepository repo,
-      Consumer<String> onOpen) {
+      Component parent, GroupTree tree, GroupStore store, NotesBrowserDialog.Callbacks callbacks) {
     this.parent = parent;
     this.tree = tree;
     this.store = store;
-    this.repo = repo;
-    this.onOpen = onOpen;
+    this.callbacks = callbacks;
   }
 
   void open(String noteId) {
-    onOpen.accept(noteId);
+    callbacks.open().accept(noteId);
   }
 
   void newGroup(String parentId) {
@@ -60,7 +52,7 @@ class NoteGroupActions {
 
   void deleteNote(TabMeta note) {
     if (confirm("Delete '" + note.name() + "' permanently?", "Delete note")) {
-      repo.delete(note.id());
+      callbacks.delete().accept(note.id());
       apply(tree.data().assign(note.id(), null));
       tree.removeNote(note);
     }

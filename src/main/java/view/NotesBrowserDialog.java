@@ -18,10 +18,14 @@ import javax.swing.KeyStroke;
 
 import dao.GroupStore;
 import dao.TabRepository;
+import model.Tab;
 import model.TabMeta;
 
 /** Browses every note in a group tree: reopen, drag to regroup, rename inline, delete. */
 class NotesBrowserDialog extends JDialog {
+
+  /** What the browser asks the owner to do: open a note, or delete it (closing its tab if open). */
+  record Callbacks(Consumer<String> open, Consumer<String> delete) {}
 
   private final GroupTree tree;
   private final transient NoteGroupActions actions;
@@ -31,12 +35,12 @@ class NotesBrowserDialog extends JDialog {
       TabRepository repo,
       GroupStore groups,
       Set<String> openIds,
-      Consumer<String> onPick) {
+      Callbacks callbacks) {
     super(owner, "Notes", false);
     List<TabMeta> notes =
-        repo.listMeta().stream().filter(m -> !TabsPane.DEFAULT_ID.equals(m.id())).toList();
+        repo.listMeta().stream().filter(m -> !Tab.DEFAULT_ID.equals(m.id())).toList();
     this.tree = new GroupTree(notes, openIds, groups.read());
-    this.actions = new NoteGroupActions(this, tree, groups, repo, onPick);
+    this.actions = new NoteGroupActions(this, tree, groups, callbacks);
     tree.setOnRename(actions::rename);
     TreeReorder reorder = new TreeReorder(tree, actions);
     tree.addMouseListener(reorder);

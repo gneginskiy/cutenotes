@@ -3,17 +3,12 @@ package util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
-import dao.TabRepository;
 import model.Tab;
-import model.TabMeta;
 
 class AutoSaverTest {
 
@@ -99,36 +94,5 @@ class AutoSaverTest {
     saver.flush();
 
     assertEquals("z", repo.byId.get("a").content());
-  }
-
-  private static final class RecordingRepo implements TabRepository {
-    final Map<String, Tab> byId = new HashMap<>();
-    final Map<String, Integer> writeCount = new HashMap<>();
-
-    @Override
-    public List<TabMeta> listMeta() {
-      return List.of();
-    }
-
-    @Override
-    public Tab load(String id) {
-      return byId.getOrDefault(id, new Tab(id, "", ""));
-    }
-
-    @Override
-    public void save(String id, String name, String content) {
-      byId.put(id, new Tab(id, name, content));
-      writeCount.merge(id, 1, Integer::sum);
-    }
-
-    @Override
-    public void delete(String id) {
-      byId.remove(id);
-    }
-
-    @Override
-    public String newId() {
-      return UUID.randomUUID().toString();
-    }
   }
 }

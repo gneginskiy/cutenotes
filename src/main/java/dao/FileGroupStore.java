@@ -58,9 +58,7 @@ public class FileGroupStore implements GroupStore {
   }
 
   @Override
-  @SneakyThrows
   public void write(GroupData data) {
-    Files.createDirectories(file.getParent());
     StringBuilder text = new StringBuilder();
     for (Group group : data.groups()) {
       text.append(GROUP)
@@ -79,6 +77,6 @@ public class FileGroupStore implements GroupStore {
     for (String noteId : data.order()) {
       text.append(ORDER).append(SEP).append(noteId).append('\n');
     }
-    Files.writeString(file, text.toString(), StandardCharsets.UTF_8);
+    AtomicFiles.write(file, text.toString());
   }
 }

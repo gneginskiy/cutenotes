@@ -33,6 +33,7 @@ class ImageMouse extends MouseInputAdapter {
       resizeOffset = selected;
       startX = e.getX();
       startWidth = ImageAttr.width(ImageActions.attrs(pane, selected));
+      pane.undoHistory().beginGroup();
       setDrag(false);
       return;
     }
@@ -46,6 +47,7 @@ class ImageMouse extends MouseInputAdapter {
     }
     if (resizeOffset >= 0) {
       resizeOffset = -1;
+      pane.undoHistory().endGroup();
       setDrag(true);
     }
   }

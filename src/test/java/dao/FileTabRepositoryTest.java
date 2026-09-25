@@ -137,4 +137,64 @@ class FileTabRepositoryTest {
   void defaultConstructorResolvesBaseDir() {
     assertDoesNotThrow(() -> new FileTabRepository().listMeta());
   }
+
+  @Test
+  void veryLongNameIsStillSaved(@TempDir Path tmp) {
+    FileTabRepository repo = new FileTabRepository(tmp);
+    String longName = "Очень длинное название заметки ".repeat(12);
+
+    repo.save("id1", longName, "body");
+
+    assertEquals(longName, repo.load("id1").name());
+    assertEquals("body", repo.load("id1").content());
+    assertEquals("id1", repo.listMeta().get(0).id());
+  }
+
+  @Test
+  void fileNamePartIsCappedByBytesWithoutSplittingCharacters() {
+    String part = NoteFileNames.namePart("😀".repeat(100));
+
+    assertTrue(
+        part.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
+            <= NoteFileNames.MAX_NAME_BYTES);
+    assertEquals(0, part.length() % 2, "surrogate pairs must stay whole");
+  }
+
+  @Test
+  void controlCharactersAreSanitized(@TempDir Path tmp) {
+    FileTabRepository repo = new FileTabRepository(tmp);
+
+    repo.save("id1", "a\tb", "x");
+
+    assertTrue(Files.exists(tmp.resolve("note_id1_a_b.txt")));
+  }
+
+  @Test
+  void idContainingUnderscoresIsListedCorrectly(@TempDir Path tmp) {
+    FileTabRepository repo = new FileTabRepository(tmp);
+
+    repo.save("__default__", "default", "scratch");
+
+    assertEquals("__default__", repo.listMeta().get(0).id());
+    assertEquals("scratch", repo.load("__default__").content());
+  }
+
+  @Test
+  void legacyFileNameStillYieldsItsId(@TempDir Path tmp) throws Exception {
+    Files.writeString(tmp.resolve("note_abc_old name.txt"), "renamed since\nbody");
+
+    assertEquals("abc", new FileTabRepository(tmp).listMeta().get(0).id());
+  }
+
+  @Test
+  void saveIsAtomicAndLeavesNoTempFiles(@TempDir Path tmp) throws Exception {
+    FileTabRepository repo = new FileTabRepository(tmp);
+    repo.save("id1", "n", "one");
+    repo.save("id1", "n", "two");
+
+    try (var files = Files.list(tmp)) {
+      assertEquals(1, files.count());
+    }
+    assertEquals("two", repo.load("id1").content());
+  }
 }

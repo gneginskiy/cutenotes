@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * Converts between inline Markdown and a flat list of {@link MdNode}s. Styles are toggle markers:
  * {@code **bold**}, {@code *italic*}, {@code __underline__}, {@code ~~strike~~}, {@code
- * ```code```}; images are {@code ![|WxH](path)} (the size suffix is optional).
+ * ```code```}; images are {@code ![|WxH](path)} (the size suffix is optional). Literal marker
+ * characters in text are backslash-escaped, see {@link MarkdownEscape}.
  */
 public final class MarkdownText {
 
@@ -26,6 +27,9 @@ public final class MarkdownText {
 
   private static int step(
       String md, int i, List<MdNode> nodes, StringBuilder text, boolean[] style) {
+    if (md.charAt(i) == '\\') {
+      return MarkdownEscape.unescape(md, i, text);
+    }
     int[] advance = new int[1];
     MdImage image = starts(md, i, "![") ? image(md, i, advance) : null;
     if (image != null) {
@@ -88,7 +92,7 @@ public final class MarkdownText {
     String underline = t.underline() ? "__" : "";
     String strike = t.strike() ? "~~" : "";
     out.append(code).append(bold).append(italic).append(underline).append(strike);
-    out.append(t.text());
+    out.append(MarkdownEscape.escape(t.text()));
     out.append(strike).append(underline).append(italic).append(bold).append(code);
   }
 

@@ -33,9 +33,7 @@ public class FileSessionStore implements SessionStore {
   }
 
   @Override
-  @SneakyThrows
   public void write(List<String> tabNames) {
-    Files.createDirectories(file.getParent());
-    Files.writeString(file, String.join("\n", tabNames), StandardCharsets.UTF_8);
+    AtomicFiles.write(file, String.join("\n", tabNames));
   }
 }

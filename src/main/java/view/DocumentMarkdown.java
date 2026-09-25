@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.swing.text.AttributeSet;
+import javax.swing.text.Element;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -24,36 +25,48 @@ final class DocumentMarkdown {
     return toMarkdown(doc, 0, doc.getLength());
   }
 
+  /**
+   * Walks the document run by run (one element at a time), not char by char: the per-char walk
+   * allocated a String and did an element lookup for every character of every open note.
+   */
   @SneakyThrows
   static String toMarkdown(StyledDocument doc, int start, int end) {
     List<MdNode> nodes = new ArrayList<>();
     StringBuilder run = new StringBuilder();
     boolean[] flags = null;
-    for (int i = start; i < end; i++) {
-      AttributeSet a = doc.getCharacterElement(i).getAttributes();
+    int i = start;
+    while (i < end) {
+      Element element = doc.getCharacterElement(i);
+      int stop = Math.min(element.getEndOffset(), end);
+      AttributeSet a = element.getAttributes();
       if (ImageAttr.isImage(a)) {
         addText(nodes, run, flags);
         flags = null;
-        nodes.add(new MdImage(ImageAttr.path(a), ImageAttr.width(a), ImageAttr.height(a)));
-        continue;
-      }
-      boolean[] current = {
-        StyleConstants.isBold(a),
-        StyleConstants.isItalic(a),
-        StyleConstants.isUnderline(a),
-        StyleConstants.isStrikeThrough(a),
-        a.getAttribute(EditorFormat.CODE) == Boolean.TRUE
-      };
-      if (flags == null) {
+        for (int k = i; k < stop; k++) {
+          nodes.add(new MdImage(ImageAttr.path(a), ImageAttr.width(a), ImageAttr.height(a)));
+        }
+      } else {
+        boolean[] current = flagsOf(a);
+        if (flags != null && !Arrays.equals(current, flags)) {
+          addText(nodes, run, flags);
+        }
         flags = current;
-      } else if (!Arrays.equals(current, flags)) {
-        addText(nodes, run, flags);
-        flags = current;
+        run.append(doc.getText(i, stop - i));
       }
-      run.append(doc.getText(i, 1));
+      i = stop;
     }
     addText(nodes, run, flags);
     return MarkdownText.write(nodes);
+  }
+
+  private static boolean[] flagsOf(AttributeSet a) {
+    return new boolean[] {
+      StyleConstants.isBold(a),
+      StyleConstants.isItalic(a),
+      StyleConstants.isUnderline(a),
+      StyleConstants.isStrikeThrough(a),
+      a.getAttribute(EditorFormat.CODE) == Boolean.TRUE
+    };
   }
 
   static boolean hasImage(StyledDocument doc, int start, int end) {
@@ -80,11 +93,16 @@ final class DocumentMarkdown {
 
   static int insertAt(StyledDocument doc, int offset, String md) {
     int pos = offset;
+    MdImage previous = null;
     for (MdNode node : MarkdownText.parse(md)) {
       if (node instanceof MdText t) {
         pos = insertText(doc, pos, t);
+        previous = null;
       } else if (node instanceof MdImage img) {
-        pos = insertImage(doc, pos, img);
+        if (!img.equals(previous)) {
+          pos = insertImage(doc, pos, img);
+          previous = img;
+        }
       }
     }
     return pos;

@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import javax.swing.BorderFactory;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
 
 final class TabPanes {
@@ -36,6 +37,10 @@ final class TabPanes {
     bar.setPreferredSize(new Dimension(0, barHeight));
     bar.setUnitIncrement(20);
     return pane;
+  }
+
+  static void focusLater(JTextComponent area) {
+    SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(area::requestFocusInWindow));
   }
 
   static JScrollPane content(JTextComponent area) {
