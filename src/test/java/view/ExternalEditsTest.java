@@ -50,12 +50,17 @@ class ExternalEditsTest {
 
   private void changeOnDisk(String text) throws Exception {
     repo.save("a", "Alpha", text);
+    touch();
+    edits.check();
+    SwingUtilities.invokeAndWait(() -> {});
+  }
+
+  /** Moves the note's file time on, as any write does. */
+  private void touch() throws Exception {
     try (Stream<Path> files = Files.list(data)) {
       Path file = files.filter(p -> p.getFileName().toString().contains("a")).findFirst().get();
       Files.setLastModifiedTime(file, FileTime.from(Instant.now().plusSeconds(60)));
     }
-    edits.check();
-    SwingUtilities.invokeAndWait(() -> {});
   }
 
   @Test
@@ -82,6 +87,50 @@ class ExternalEditsTest {
     TabMeta copy = notes.stream().filter(m -> !m.id().equals("a")).findFirst().get();
     assertEquals("Alpha (from disk)", copy.name());
     assertEquals("from sync", repo.load(copy.id()).content());
+  }
+
+  /**
+   * The app's own autosave may land between reading the file and asking what was saved last. The
+   * file then looks older than the app's last save and the tab used to be "reloaded" with it,
+   * throwing the latest typing away.
+   */
+  @Test
+  void theAppsOwnSaveDuringACheckIsNotTakenForAnOutsideChange() throws Exception {
+    open("typed 1");
+    SwingUtilities.invokeAndWait(() -> tabs.areaOf("a").setMarkdown("typed 1, typed 2"));
+    Tab typed = new Tab("a", "Alpha", "typed 1, typed 2");
+    FileTabRepository racing =
+        new FileTabRepository(data) {
+          private boolean raced;
+
+          @Override
+          public Tab load(String id) {
+            Tab onDisk = super.load(id);
+            if (!raced) {
+              raced = true;
+              Thread tick = Thread.ofVirtual().start(() -> saver.save(typed));
+              try {
+                tick.join(300);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            }
+            return onDisk;
+          }
+        };
+    edits = new ExternalEdits(racing, tabs, saver, toasts::add);
+    edits.check();
+    touch();
+
+    edits.check();
+    SwingUtilities.invokeAndWait(() -> {});
+    Thread.sleep(100);
+    SwingUtilities.invokeAndWait(() -> {});
+
+    SwingUtilities.invokeAndWait(
+        () -> assertEquals("typed 1, typed 2", tabs.areaOf("a").markdown()));
+    assertEquals(1, repo.listMeta().size(), "no copy of the app's own text");
+    assertTrue(toasts.isEmpty(), toasts.toString());
   }
 
   @Test

@@ -97,4 +97,11 @@ class AutoSaverTest {
 
     assertEquals("z", repo.byId.get("a").content());
   }
+
+  @Test
+  void readsWithoutSavingGetTheValueOfTheRead() {
+    AutoSaver saver = new AutoSaver(List::of, new RecordingRepo());
+
+    assertEquals("read", saver.withoutSaving(() -> "read"));
+  }
 }

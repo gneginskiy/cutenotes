@@ -55,6 +55,14 @@ public class AutoSaver {
     discarded.remove(tab.id());
   }
 
+  /**
+   * Runs {@code read} while no save can happen, so what it reads from disk and {@link #lastSaved}
+   * describe the same moment.
+   */
+  public synchronized <T> T withoutSaving(Supplier<T> read) {
+    return read.get();
+  }
+
   /** The note as the app last wrote or read it; {@code null} if unknown. */
   public synchronized Tab lastSaved(String id) {
     return lastSaved.get(id);

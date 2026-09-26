@@ -33,15 +33,25 @@ JAVA_HOME_DIR="$HOME_DIR"
 command -v cygpath > /dev/null && JAVA_HOME_DIR="$(cygpath -w "$HOME_DIR")"
 export JAVA_TOOL_OPTIONS="-Duser.home=$JAVA_HOME_DIR"
 
-set +e
-timeout "$SECONDS_UP" "${RUN[@]}" > "$TMP/app.log" 2>&1
-status=$?
-set -e
+# No coreutils `timeout` on macOS: start in the background and stop it after the wait.
+"${RUN[@]}" > "$TMP/app.log" 2>&1 &
+pid=$!
+sleep "$SECONDS_UP"
+if kill -0 "$pid" 2> /dev/null; then
+  status=124
+  kill "$pid" 2> /dev/null || true
+  wait "$pid" 2> /dev/null || true
+else
+  set +e
+  wait "$pid"
+  status=$?
+  set -e
+fi
 
 cat "$TMP/app.log"
 DATA="$HOME_DIR/cutenotes_data"
 cat "$DATA"/logs/*.log 2> /dev/null || true
-if [[ $status -ne 124 ]]; then
+if [[ $status -ne 124 ]]; then  # 124: still running when stopped
   echo "cuteNotes exited early with status $status" >&2
   exit 1
 fi

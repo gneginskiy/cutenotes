@@ -60,13 +60,16 @@ final class ExternalEdits {
   void check() {
     List<String> open = EdtRead.onEdt(tabs::openIds);
     for (String id : times.changed(repo.listMeta(), open)) {
-      Tab disk = repo.load(id);
-      Tab known = saver.lastSaved(id);
-      if (known != null && !NoteCrypto.isEncrypted(disk.content())) {
-        SwingUtilities.invokeLater(() -> apply(disk, known));
+      // read together: an autosave in between would make the app's own write look foreign
+      Seen seen = saver.withoutSaving(() -> new Seen(repo.load(id), saver.lastSaved(id)));
+      if (seen.known() != null && !NoteCrypto.isEncrypted(seen.disk().content())) {
+        SwingUtilities.invokeLater(() -> apply(seen.disk(), seen.known()));
       }
     }
   }
+
+  /** A note on disk and as the app last saved it, read at the same moment. */
+  private record Seen(Tab disk, Tab known) {}
 
   void apply(Tab disk, Tab known) {
     Tab current = tabs.snapshotOf(disk.id());

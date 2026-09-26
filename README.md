@@ -111,6 +111,10 @@ Every push to `develop` is built, tested and packaged for macOS, Windows and Lin
 committed to the repository.
 
 # Release notes
+2026-Sep-26-5 (details in [docs/release_notes](docs/release_notes/2026-09-26-external-edits-race.md)):
+- Fix: the app's own autosave could be mistaken for a change made outside, reverting the last typed words or creating a "(from disk)" copy
+- Note: cuteNotes versions before 2026-09-26 have no single-instance lock; do not run them on the same notes folder as the current one
+- macOS builds are now smoke-tested in CI too
 2026-Sep-26-4 (details in [docs/release_notes](docs/release_notes/2026-09-26-product-review-fixes.md)):
 - Nothing gets lost: "Recently deleted" (30 days), version history per note, a daily backup, reload or keep-both when a synced file changes, a warning when another computer uses the notes folder
 - Password-protected notes (AES-256) with auto-lock; export to Markdown / text / web page and print
