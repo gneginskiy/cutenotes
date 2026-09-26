@@ -1,10 +1,13 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.GridBagLayout;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JComponent;
@@ -28,6 +31,8 @@ class TabStrip {
       Consumer<String> select,
       BiConsumer<String, String> rename,
       Consumer<List<String>> reorder,
+      Function<String, String> colorOf,
+      BiConsumer<String, String> setColor,
       JComponent layoutRoot) {
     this.header =
         new TabHeader(
@@ -37,11 +42,13 @@ class TabStrip {
                 reorder,
                 id -> requests.close().accept(id),
                 id -> requests.closeOthers().accept(id),
-                () -> requests.newTab().run()));
+                () -> requests.newTab().run(),
+                colorOf,
+                setColor));
     this.headerScroll = TabPanes.header(header);
     this.newTab =
-        new FlatButton(VectorIcon.Kind.PLUS, 14, "New tab", () -> requests.newTab().run());
-    this.pin = new FlatButton(VectorIcon.Kind.PIN, 14, "Pin the tabs bar", this::togglePin);
+        new FlatButton(VectorIcon.Kind.PLUS, 14, tr("tab.new"), () -> requests.newTab().run());
+    this.pin = new FlatButton(VectorIcon.Kind.PIN, 14, tr("tab.pin"), this::togglePin);
     Box row = Box.createHorizontalBox();
     row.add(newTab);
     row.add(Box.createHorizontalStrut(2));
@@ -64,6 +71,11 @@ class TabStrip {
   /** Where short status messages go ("Tabs bar pinned"). */
   void setNotifier(Consumer<String> notifier) {
     this.notifier = notifier;
+  }
+
+  /** Shows a short message (a toast in the window). */
+  void announce(String message) {
+    notifier.accept(message);
   }
 
   JComponent component() {
@@ -94,12 +106,12 @@ class TabStrip {
     pin.applyPalette(p);
   }
 
-  private void togglePin() {
+  void togglePin() {
     boolean on = !revealer.isPinned();
     revealer.setPinned(on);
     pin.setOn(on);
     pin.setGlyph(on ? VectorIcon.Kind.PIN_ON : VectorIcon.Kind.PIN);
-    pin.setToolTipText(on ? "Tabs bar pinned — click to unpin" : "Pin the tabs bar");
-    notifier.accept(on ? "Tabs bar pinned" : "Tabs bar unpinned");
+    pin.setToolTipText(on ? tr("tab.pinned") : tr("tab.pin"));
+    notifier.accept(on ? tr("toast.tabsPinned") : tr("toast.tabsUnpinned"));
   }
 }

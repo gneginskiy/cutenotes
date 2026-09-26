@@ -14,6 +14,10 @@ import model.Theme;
 class SearchFieldTest {
 
   static {
+    Messages.useLanguage("en");
+  }
+
+  static {
     System.setProperty("java.awt.headless", "true");
   }
 

@@ -27,6 +27,9 @@ record UiPalette(
     Color selection,
     Color danger) {
 
+  /** WCAG AA for normal text: secondary text never drops below it. */
+  static final double READABLE = 4.5;
+
   static final Color FALLBACK_ACCENT = new Color(15, 123, 108);
   private static final Color AMBER = new Color(255, 196, 0);
   private static final Color ORANGE = new Color(255, 140, 0);
@@ -35,13 +38,15 @@ record UiPalette(
     Color bg = t.bg();
     boolean dark = Colors.isDark(bg);
     Color accent = t.codeColor() != null ? t.codeColor() : FALLBACK_ACCENT;
+    Color chrome = Colors.contrast(bg, dark ? 0.07f : 0.045f);
+    Color muted = Colors.legible(Colors.blend(t.fg(), bg, 0.45f), t.fg(), READABLE, bg, chrome);
     return new UiPalette(
         bg,
         t.fg(),
-        Colors.contrast(bg, dark ? 0.07f : 0.045f),
+        chrome,
         Colors.contrast(bg, dark ? 0.15f : 0.09f),
         Colors.contrast(bg, dark ? 0.2f : 0.13f),
-        Colors.blend(t.fg(), bg, 0.45f),
+        muted,
         accent,
         Colors.blend(bg, accent, dark ? 0.42f : 0.24f),
         dark ? new Color(255, 112, 102) : new Color(200, 55, 45));

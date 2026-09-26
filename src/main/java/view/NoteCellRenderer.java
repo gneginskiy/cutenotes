@@ -1,5 +1,8 @@
 package view;
 
+import static view.Messages.tr;
+
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
@@ -7,38 +10,36 @@ import java.awt.Graphics;
 import java.awt.Insets;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Set;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 
+import model.NoteMeta;
 import model.TabMeta;
 
 /**
- * Notes browser rows: a folder or note icon, the name, and a muted trailing detail — a relative
- * date ("Yesterday") for notes, the item count for groups. Open notes get an accent icon.
+ * Notes browser rows: an icon (pinned notes get a pin; the note colour or, for open notes, the
+ * accent tints it), the name, and a muted detail — the text around a search match, or a relative
+ * date ("Yesterday"); groups show their item count.
  */
 class NoteCellRenderer extends DefaultTreeCellRenderer {
 
   private static final int GAP = 10;
 
-  private final transient Set<String> openIds;
+  private final transient BrowserQuery query;
   private final transient VectorIcon noteIcon = new VectorIcon(VectorIcon.Kind.NOTE, 14);
-  private final transient VectorIcon openIcon = new VectorIcon(VectorIcon.Kind.NOTE, 14);
   private final transient VectorIcon folderIcon = new VectorIcon(VectorIcon.Kind.FOLDER, 14);
   private transient UiPalette palette = UiPalette.current();
   private String detail = "";
 
-  NoteCellRenderer(Set<String> openIds) {
-    this.openIds = openIds;
+  NoteCellRenderer(BrowserQuery query) {
+    this.query = query;
     setIconTextGap(7);
     applyPalette(palette);
   }
 
   final void applyPalette(UiPalette p) {
     palette = p;
-    noteIcon.setColor(p.muted());
-    openIcon.setColor(p.accent());
     folderIcon.setColor(p.muted());
     setTextNonSelectionColor(p.fg());
     setTextSelectionColor(p.fg());
@@ -54,15 +55,32 @@ class NoteCellRenderer extends DefaultTreeCellRenderer {
     DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
     Object userObject = node.getUserObject();
     if (userObject instanceof TabMeta meta) {
-      boolean open = openIds.contains(meta.id());
-      setIcon(open ? openIcon : noteIcon);
-      detail = RelativeTime.format(meta.lastModified(), Instant.now(), ZoneId.systemDefault());
-      detail = open ? detail + "  ·  open" : detail;
+      describe(meta);
     } else {
       setIcon(folderIcon);
       detail = userObject != null ? String.valueOf(node.getChildCount()) : "";
     }
     return this;
+  }
+
+  private void describe(TabMeta note) {
+    NoteMeta meta = query.metas().get(note.id());
+    boolean open = query.filter().openIds().contains(note.id());
+    Color tint = NoteColors.of(meta.color());
+    noteIcon.setKind(meta.pinned() ? VectorIcon.Kind.PIN_ON : VectorIcon.Kind.NOTE);
+    noteIcon.setColor(tint != null ? tint : open ? palette.accent() : palette.muted());
+    setIcon(noteIcon);
+    String snippet = query.filter().snippet(note);
+    detail =
+        snippet != null
+            ? snippet
+            : RelativeTime.format(note.lastModified(), Instant.now(), ZoneId.systemDefault());
+    if (open) {
+      detail += "  ·  " + tr("browser.status.open");
+    }
+    if (query.filter().index() != null && query.filter().index().locked(note.id())) {
+      detail += "  ·  " + tr("browser.status.locked");
+    }
   }
 
   @Override

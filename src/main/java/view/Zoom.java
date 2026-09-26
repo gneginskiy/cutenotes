@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.util.function.Consumer;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
@@ -46,14 +48,15 @@ final class Zoom {
   }
 
   static String label(int size) {
-    return "Text size " + size + " pt";
+    return tr("toast.textSize", size);
   }
 
-  private static String step(AppOptions options, int delta) {
+  /** Zooms one level in (1) or out (-1); returns the message to show. */
+  static String step(AppOptions options, int delta) {
     Theme t = ThemeHolder.current();
     int size = stepFrom(t.fontSize(), delta);
     if (size == t.fontSize()) {
-      return label(size) + (delta > 0 ? " · largest" : " · smallest");
+      return tr(delta > 0 ? "toast.textSize.largest" : "toast.textSize.smallest", size);
     }
     options.applyTheme(
         new Theme(

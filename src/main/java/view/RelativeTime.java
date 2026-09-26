@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,10 +27,10 @@ final class RelativeTime {
   static String format(Instant then, Instant now, ZoneId zone) {
     Duration age = Duration.between(then, now);
     if (age.isNegative() || age.toSeconds() < 60) {
-      return "just now";
+      return tr("time.justNow");
     }
     if (age.toMinutes() < 60) {
-      return age.toMinutes() + " min ago";
+      return tr("time.minutesAgo", age.toMinutes());
     }
     ZonedDateTime at = then.atZone(zone);
     LocalDate today = now.atZone(zone).toLocalDate();
@@ -37,11 +39,16 @@ final class RelativeTime {
       return at.format(TIME);
     }
     if (days == 1) {
-      return "Yesterday";
+      return tr("time.yesterday");
     }
     if (days < 7) {
-      return at.format(WEEKDAY);
+      return capitalize(at.format(WEEKDAY.withLocale(Messages.locale())));
     }
-    return at.getYear() == today.getYear() ? at.format(DAY_MONTH) : at.format(FULL);
+    DateTimeFormatter format = at.getYear() == today.getYear() ? DAY_MONTH : FULL;
+    return at.format(format.withLocale(Messages.locale()));
+  }
+
+  private static String capitalize(String s) {
+    return s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Messages.locale()) + s.substring(1);
   }
 }

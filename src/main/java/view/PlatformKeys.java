@@ -50,9 +50,40 @@ final class PlatformKeys {
         KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, menuMask));
   }
 
+  /** Previous tab: Ctrl+Shift+Tab everywhere, plus Cmd+Shift+[ (macOS) or Ctrl+PgUp. */
+  static List<KeyStroke> previousTab(boolean mac, int menuMask) {
+    KeyStroke platform =
+        mac
+            ? KeyStroke.getKeyStroke(KeyEvent.VK_OPEN_BRACKET, menuMask | SHIFT)
+            : KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, CTRL);
+    return List.of(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, CTRL | SHIFT), platform);
+  }
+
+  /** Extra next-tab keys besides {@link #nextTabModifiers}: Cmd+Shift+] (macOS) or Ctrl+PgDn. */
+  static KeyStroke nextTabExtra(boolean mac, int menuMask) {
+    return mac
+        ? KeyStroke.getKeyStroke(KeyEvent.VK_CLOSE_BRACKET, menuMask | SHIFT)
+        : KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, CTRL);
+  }
+
+  /** Find and replace: Cmd+Option+F on macOS, Ctrl+H elsewhere (the platform conventions). */
+  static KeyStroke replace(boolean mac, int menuMask) {
+    return mac
+        ? KeyStroke.getKeyStroke(KeyEvent.VK_F, menuMask | ALT)
+        : KeyStroke.getKeyStroke(KeyEvent.VK_H, CTRL);
+  }
+
+  static String previousTabHelp(boolean mac) {
+    return mac ? "Ctrl+Shift+Tab / Cmd+Shift+[" : "Ctrl+Shift+Tab / Ctrl+PgUp";
+  }
+
+  static String replaceHelp(boolean mac) {
+    return mac ? "Cmd+Option+F" : "Ctrl+H";
+  }
+
   /** Help text of the next-tab shortcut. */
   static String nextTabHelp(boolean mac) {
-    return mac ? "Option+Tab / Ctrl+Tab" : "Ctrl+Tab";
+    return mac ? "Option+Tab / Ctrl+Tab / Cmd+Shift+]" : "Ctrl+Tab / Ctrl+PgDn";
   }
 
   /** Help text of back / forward navigation. */

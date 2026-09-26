@@ -23,7 +23,9 @@ final class ShortcutText {
   private static final String ALTERNATIVES = "\\s+/\\s+";
 
   private static final Set<String> NAMED_KEYS =
-      Set.of("Cmd", "Ctrl", "Shift", "Option", "Alt", "Enter", "Tab", "Esc", "Space", "Delete");
+      Set.of(
+          "Cmd", "Ctrl", "Shift", "Option", "Alt", "Enter", "Tab", "Esc", "Space", "Delete", "PgUp",
+          "PgDn", "Click");
 
   private static final Map<String, String> MAC_SYMBOLS =
       Map.of(

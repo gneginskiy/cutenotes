@@ -1,6 +1,8 @@
 package view;
 
 import java.awt.Dimension;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JScrollBar;
@@ -48,7 +50,29 @@ final class TabPanes {
     thin(pane.getVerticalScrollBar(), new Dimension(CONTENT_BAR, 0));
     thin(pane.getHorizontalScrollBar(), new Dimension(0, CONTENT_BAR));
     pane.getVerticalScrollBar().setUnitIncrement(16);
+    if (area instanceof NoteEditor editor) {
+      pane.getViewport()
+          .addComponentListener(
+              new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                  fit(editor, pane);
+                }
+              });
+    }
     return pane;
+  }
+
+  /** Re-fits an editor inside its scroller (after a font or line-width change). */
+  static void refit(NoteEditor editor) {
+    if (SwingUtilities.getAncestorOfClass(JScrollPane.class, editor) instanceof JScrollPane pane) {
+      fit(editor, pane);
+    }
+  }
+
+  /** Re-centres the editor's text column for the current line-width setting. */
+  static void fit(NoteEditor editor, JScrollPane pane) {
+    editor.fitWidth(pane.getViewport().getWidth(), SettingsHolder.current().lineWidth());
   }
 
   private static void thin(JScrollBar bar, Dimension size) {

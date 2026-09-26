@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -18,25 +20,27 @@ import model.TabMeta;
 /** A {@link JTree} showing notes nested under a forest of groups, with an "Ungrouped" bucket. */
 class GroupTree extends JTree {
 
-  static final String UNGROUPED = "Ungrouped";
-
   private final transient List<TabMeta> notes;
   private transient GroupData data;
   private transient BiConsumer<String, String> onRename = (id, name) -> {};
-  private transient NoteFilter filter;
+  private final transient BrowserQuery query;
 
   GroupTree(List<TabMeta> notes, Set<String> openIds, GroupData data) {
+    this(notes, openIds, data, NoteMetas.inMemory());
+  }
+
+  GroupTree(List<TabMeta> notes, Set<String> openIds, GroupData data, NoteMetas metas) {
     this.notes =
         new ArrayList<>(
             notes.stream().sorted(Comparator.comparing(TabMeta::lastModified).reversed()).toList());
-    this.filter = NoteFilter.all(openIds);
+    this.query = new BrowserQuery(openIds, metas);
     this.data = data;
     setRootVisible(false);
     setShowsRootHandles(true);
     setRowHeight(26);
     putClientProperty("JTree.lineStyle", "None");
     getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-    NoteCellRenderer renderer = new NoteCellRenderer(openIds);
+    NoteCellRenderer renderer = new NoteCellRenderer(query);
     setCellRenderer(renderer);
     setCellEditor(new GroupCellEditor(this, renderer));
     setEditable(true);
@@ -52,13 +56,12 @@ class GroupTree extends JTree {
     rebuild();
   }
 
-  void setShowAll(boolean all) {
-    this.filter = filter.withShowOpen(all);
-    rebuild();
+  /** What is listed and how it is ordered; call {@link #refresh} after changing it. */
+  BrowserQuery query() {
+    return query;
   }
 
-  void setQuery(String query) {
-    this.filter = filter.withQuery(query);
+  void refresh() {
     rebuild();
   }
 
@@ -73,11 +76,6 @@ class GroupTree extends JTree {
       }
     }
     return null;
-  }
-
-  /** While a search narrows the list, dragging would reorder against notes that are hidden. */
-  boolean searching() {
-    return filter.searching();
   }
 
   void setOnRename(BiConsumer<String, String> handler) {
@@ -134,7 +132,8 @@ class GroupTree extends JTree {
   }
 
   private void rebuild() {
-    DefaultMutableTreeNode root = GroupNodes.root(data, notes, filter, UNGROUPED);
+    DefaultMutableTreeNode root =
+        GroupNodes.root(data, notes, query.filter(), query.order(data), tr("browser.ungrouped"));
     setModel(new GroupTreeModel(root, this::commitEdit));
     for (int i = 0; i < getRowCount(); i++) {
       expandRow(i);

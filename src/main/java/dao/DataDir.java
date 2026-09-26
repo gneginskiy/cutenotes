@@ -26,14 +26,27 @@ public final class DataDir {
   public static Path resolve() {
     Path dir = cached;
     if (dir == null) {
+      Path home = DataLocation.home();
       dir =
           pick(
+              DataLocation.read(home),
               Boolean.getBoolean(INSTALLED_PROPERTY),
               jarDir().resolve(FOLDER),
-              Path.of(System.getProperty("user.home"), FOLDER));
+              home.resolve(FOLDER));
       cached = dir;
     }
     return dir;
+  }
+
+  /**
+   * A folder chosen by the user wins when it can be used; otherwise the default applies (see {@link
+   * #pick(boolean, Path, Path)}).
+   */
+  static Path pick(Path chosen, boolean installed, Path nextToJar, Path home) {
+    if (chosen != null && usable(chosen)) {
+      return chosen;
+    }
+    return pick(installed, nextToJar, home);
   }
 
   /**

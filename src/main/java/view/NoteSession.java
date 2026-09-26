@@ -1,9 +1,12 @@
 package view;
 
+import java.util.function.UnaryOperator;
+
 import dao.SessionStore;
 import dao.TabRepository;
 import model.Tab;
 import util.AutoSaver;
+import util.NoteCrypto;
 import util.SaveListener;
 
 /**
@@ -17,6 +20,7 @@ final class NoteSession {
   private final SessionStore sessions;
   private final TabsPane tabs;
   private final AutoSaver autoSaver;
+  private UnaryOperator<Tab> unlocker = UnaryOperator.identity();
 
   NoteSession(TabRepository repo, SessionStore sessions, TabsPane tabs, SaveListener listener) {
     this.repo = repo;
@@ -26,6 +30,14 @@ final class NoteSession {
     tabs.strip().setRequests(new TabRequests(this::newTab, this::close, this::closeOthers));
   }
 
+  /**
+   * Decides how a stored note opens: a password-protected one asks for its password and returns the
+   * readable note, or {@code null} to leave it closed.
+   */
+  void setUnlocker(UnaryOperator<Tab> unlocker) {
+    this.unlocker = unlocker;
+  }
+
   void restore() {
     tabs.setDefaultContent(repo.load(Tab.DEFAULT_ID).content());
     autoSaver.markSaved(tabs.snapshotOf(Tab.DEFAULT_ID));
@@ -33,7 +45,7 @@ final class NoteSession {
       Tab tab = repo.load(id);
       if (tab.content().isBlank()) {
         repo.delete(id);
-      } else {
+      } else if (!NoteCrypto.isEncrypted(tab.content())) {
         open(tab);
       }
     }
@@ -41,10 +53,15 @@ final class NoteSession {
 
   void start() {
     autoSaver.start();
+    new ExternalEdits(repo, tabs, autoSaver, tabs.strip()::announce).start();
   }
 
   void newTab() {
-    tabs.openTab(repo.newId(), "untitled", "");
+    newTab(Messages.tr("tab.untitled"), "");
+  }
+
+  void newTab(String name, String text) {
+    tabs.openTab(repo.newId(), name, text);
   }
 
   void openExisting(String id) {
@@ -94,10 +111,14 @@ final class NoteSession {
     return false;
   }
 
-  /** Deletes a note for good; an open tab showing it is closed instead of lingering unsaved. */
+  /** Moves a note to "Recently deleted"; an open tab showing it is closed first. */
   void delete(String id) {
-    tabs.close(id);
-    deleteFile(id);
+    Tab closed = tabs.close(id);
+    autoSaver.discard(id);
+    if (closed != null && !closed.content().isBlank()) {
+      repo.save(id, closed.name(), closed.content());
+    }
+    repo.trash(id);
   }
 
   /**
@@ -119,8 +140,11 @@ final class NoteSession {
     repo.delete(id);
   }
 
-  private void open(Tab tab) {
-    tabs.openTab(tab.id(), tab.name(), tab.content());
-    autoSaver.markSaved(tabs.snapshotOf(tab.id()));
+  private void open(Tab stored) {
+    Tab tab = unlocker.apply(stored);
+    if (tab != null) {
+      tabs.openTab(tab.id(), tab.name(), tab.content());
+      autoSaver.markSaved(tabs.snapshotOf(tab.id()));
+    }
   }
 }

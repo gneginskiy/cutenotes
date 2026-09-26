@@ -7,15 +7,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import dao.FileTabRepository;
 import dao.SessionStore;
 import model.Tab;
+import util.NoteCrypto;
 import util.RecordingRepo;
 
 class NoteSessionTest {
@@ -80,6 +84,48 @@ class NoteSessionTest {
 
     assertFalse(repo.byId.containsKey("a"));
     assertEquals(List.of(), sessions.ids);
+  }
+
+  @Test
+  void deletingMovesTheNoteWithItsLastEditsToTheBin(@TempDir Path data) throws Exception {
+    FileTabRepository disk = new FileTabRepository(data);
+    disk.save("a", "Alpha", "text");
+    sessions.ids = List.of("a");
+
+    onEdt(
+        () -> {
+          TabsPane tabs = new TabsPane();
+          NoteSession session = new NoteSession(disk, sessions, tabs, f -> {});
+          session.restore();
+          tabs.activeArea().setMarkdown("last edit");
+          session.delete("a");
+          session.persist();
+        });
+
+    assertTrue(disk.listMeta().isEmpty());
+    assertEquals("last edit", disk.trashBin().load("a").content());
+  }
+
+  @Test
+  void protectedNotesStayClosedOnRestartAndOpenOnlyThroughTheUnlocker() throws Exception {
+    repo.save("a", "Alpha", NoteCrypto.PREFIX + "x:y:z");
+    sessions.ids = List.of("a");
+
+    onEdt(
+        () -> {
+          TabsPane tabs = new TabsPane();
+          NoteSession session = new NoteSession(repo, sessions, tabs, f -> {});
+          session.restore();
+          assertTrue(tabs.openIds().isEmpty(), "no password prompt at start");
+
+          session.setUnlocker(tab -> null);
+          session.openExisting("a");
+          assertTrue(tabs.openIds().isEmpty(), "cancelled");
+
+          session.setUnlocker(tab -> new Tab(tab.id(), tab.name(), "readable"));
+          session.openExisting("a");
+          assertEquals("readable", tabs.activeArea().markdown());
+        });
   }
 
   @Test
@@ -225,11 +271,11 @@ class NoteSessionTest {
           TabsPane tabs = new TabsPane();
           NoteSession session = new NoteSession(repo, sessions, tabs, f -> {});
           session.newTab();
-          tabs.revealer().show();
+          tabs.strip().revealer().show();
 
           session.closeCurrent();
 
-          assertFalse(tabs.revealer().isShown());
+          assertFalse(tabs.strip().revealer().isShown());
         });
   }
 

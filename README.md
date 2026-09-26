@@ -2,7 +2,15 @@
 
 A minimalist keyboard-driven cross-platform (Linux, Windows, macOS) always-on-top scratchpad with auto-saved tabs,
 written in plain Java w/o dependencies (except Lombok, it doesn't count).
-Stores everything in plain text. Customizable colors, fonts, and other settings.
+Stores everything in plain text (Markdown). Customizable colors, fonts, and other settings.
+
+- Tabs that save themselves; a quick switcher and full-text search across all notes, `#tags`, pinned and coloured notes
+- Lists, checkboxes, headings, links, bold / italic / code, pasted or dropped pictures — all stored as plain Markdown
+- Find & replace (match case, whole words, regular expressions)
+- Nothing gets lost: version history per note, "Recently deleted" for 30 days, a daily backup, reload or keep-both when a synced file changes
+- Password-protected notes (AES-256), locked again after idle time
+- Export to Markdown, text or a web page; print
+- English and Russian; follows the system's light / dark mode; tray icon; notes folder can live in Dropbox / iCloud Drive
 
 <div align="center">
 <table>
@@ -31,12 +39,16 @@ Or, with Java 21+ installed, download the jar and double-click it.
 
 The latest build, straight from [GitHub Releases](https://github.com/gneginskiy/cutenotes/releases/latest):
 
-| System | Download | Start |
-|--------|----------|-------|
-| macOS (Apple silicon) | [cutenotes-mac-arm64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-arm64.zip) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
-| Windows x64 | [cutenotes-windows-x64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-windows-x64.zip) | Unzip, run `cuteNotes\cuteNotes.exe` |
-| Linux x64 | [cutenotes-linux-x64.tar.gz](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-x64.tar.gz) | `tar -xzf`, run `cuteNotes/bin/cuteNotes` |
-| Any OS with Java 21+ | [cutenotes.jar](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes.jar) | Double-click, or `java -jar cutenotes.jar` |
+| System | Download | Installer | Start |
+|--------|----------|-----------|-------|
+| macOS (Apple silicon) | [cutenotes-mac-arm64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-arm64.zip) | [.dmg](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-arm64.dmg) | Unzip, move `cuteNotes.app` to Applications, open it (first start: System Settings → Privacy & Security → Open Anyway) |
+| macOS (Intel) | [cutenotes-mac-x64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-x64.zip) | [.dmg](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-mac-x64.dmg) | Same as Apple silicon |
+| Windows x64 | [cutenotes-windows-x64.zip](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-windows-x64.zip) | [.msi](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-windows-x64.msi) | Unzip, run `cuteNotes\cuteNotes.exe` |
+| Linux x64 | [cutenotes-linux-x64.tar.gz](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-x64.tar.gz) | [.deb](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-x64.deb) | `tar -xzf`, run `cuteNotes/bin/cuteNotes` |
+| Linux arm64 | [cutenotes-linux-arm64.tar.gz](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-arm64.tar.gz) | [.deb](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes-linux-arm64.deb) | Same as Linux x64 |
+| Any OS with Java 21+ | [cutenotes.jar](https://github.com/gneginskiy/cutenotes/releases/latest/download/cutenotes.jar) | | Double-click, or `java -jar cutenotes.jar` |
+
+macOS Intel, Linux arm64 and the installers are built when their CI runners manage; if a link is missing, take the archive.
 
 Every version is on the [releases page](https://github.com/gneginskiy/cutenotes/releases).
 Jars of releases before 2026-09-26-3 are kept in [releases/](releases).
@@ -46,6 +58,15 @@ Jars of releases before 2026-09-26-3 are kept in [releases/](releases).
 The apps keep your notes, session and options in `cutenotes_data/` in your home folder, so updating the app keeps them.
 The plain jar is portable: its `cutenotes_data/` folder sits next to the jar.
 Moving from the jar to an app? Copy that folder into your home folder.
+To keep notes in Dropbox, iCloud Drive and the like, pick the folder in Options → Application → Notes folder;
+cuteNotes warns when another computer is using the same folder at the moment.
+
+Inside `cutenotes_data/`: one `.txt` file per note (Markdown), `images/`, `history/` (earlier versions of each note),
+`trash/` (deleted notes, kept 30 days), `backups/` (a zip a day, the last 7) and `logs/`.
+
+**Summon the window with a hotkey:** starting cuteNotes while it runs brings its window to the front (the tray icon
+does the same). Bind a system shortcut to start it — macOS: a Shortcuts action "Open App"; Windows: the "Shortcut key"
+field in the properties of a shortcut to `cuteNotes.exe`; Linux: your desktop's keyboard settings.
 
 ## Shortcuts
 
@@ -58,7 +79,12 @@ Press **F1** in the app for the full, OS-aware list. Highlights:
 | All notes: search & open    | `Cmd+R`, type, `Enter`        | `Ctrl+R`, type, `Enter`         |
 | Close tab with the mouse    | Middle-click or hover ×       | Middle-click or hover ×         |
 | Next tab                    | `Option+Tab` or `Ctrl+Tab`    | `Ctrl+Tab`                      |
-| Find                        | `Cmd+F`                       | `Ctrl+F`                        |
+| Find / Replace              | `Cmd+F` / `Cmd+Option+F`      | `Ctrl+F` / `Ctrl+H`             |
+| Find in all notes           | `Cmd+Shift+F`                 | `Ctrl+Shift+F`                  |
+| Continue a list / indent    | `Enter` / `Tab`, `Shift+Tab`  | `Enter` / `Tab`, `Shift+Tab`    |
+| Toggle checkbox             | `Cmd+Enter` or click          | `Ctrl+Enter` or click           |
+| Export / Print note         | `Cmd+Shift+E` / `Cmd+P`       | `Ctrl+Shift+E` / `Ctrl+P`       |
+| Lock protected notes        | `Cmd+Shift+L`                 | `Ctrl+Shift+L`                  |
 | Options                     | `Cmd+O`                       | `Ctrl+O`                        |
 | Zoom in / out text          | `Cmd+=` / `Cmd+-`             | `Ctrl+=` / `Ctrl+-` (or numpad `+`/`-`) |
 | Undo / Redo                 | `Cmd+Z` / `Cmd+Shift+Z`       | `Ctrl+Z` / `Ctrl+Shift+Z`       |
@@ -78,13 +104,21 @@ mvn clean install
 ```
 
 Output: `target/cutenotes.jar`. `scripts/package.sh` then packages the app with a bundled runtime for
-the OS you run it on (into `target/dist/`).
+the OS you run it on (into `target/dist/`); with `INSTALLERS=1` it also builds the `.dmg`, `.msi` or `.deb`.
 
 Every push to `develop` is built, tested and packaged for macOS, Windows and Linux by
 [GitHub Actions](.github/workflows/release.yml) and published as a GitHub Release; binaries are not
 committed to the repository.
 
 # Release notes
+2026-Sep-26-4 (details in [docs/release_notes](docs/release_notes/2026-09-26-product-review-fixes.md)):
+- Nothing gets lost: "Recently deleted" (30 days), version history per note, a daily backup, reload or keep-both when a synced file changes, a warning when another computer uses the notes folder
+- Password-protected notes (AES-256) with auto-lock; export to Markdown / text / web page and print
+- Lists and checkboxes that continue on Enter, headings, clickable links, `#tags`, find & replace, full-text search with snippets in `Cmd/Ctrl+R`, pinned and coloured notes
+- Starting the app again shows / hides the window (bind any OS hotkey to it), tray icon, drag & drop of text files and pictures
+- Options → Application: language (English / Russian), follow the system's light / dark mode, line width, updates, auto-lock, notes folder (e.g. in Dropbox)
+- About window, update check, logs, app icon; installers (.dmg / .msi / .deb) and builds for macOS Intel and Linux arm64
+- Readable secondary text (WCAG AA) in every theme; screen-reader names for buttons and tabs
 2026-Sep-26-3 (details in [docs/release_notes](docs/release_notes/2026-09-26-github-releases.md)):
 - Downloads now live on [GitHub Releases](https://github.com/gneginskiy/cutenotes/releases), built by GitHub Actions on every push to `develop`, natively on macOS, Windows and Linux
 - Windows starts with `cuteNotes.exe` (no more `.bat`); Linux with `cuteNotes/bin/cuteNotes`

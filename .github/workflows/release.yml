@@ -1,7 +1,9 @@
-# Every push to develop builds and tests the jar, packages the app natively on macOS (Apple
-# silicon), Windows x64 and Linux x64 with a bundled Java runtime, smoke-tests the Linux package
-# and publishes everything as a GitHub Release (tag v<date>, v<date>-1, …).
+# Every push to develop builds and tests the jar, packages the app natively with a bundled Java
+# runtime (macOS Apple silicon and Intel, Windows x64, Linux x64 and arm64; plus a .dmg, .msi or
+# .deb installer), smoke-tests each package and publishes everything as a GitHub Release
+# (tag v<date>, v<date>-1, …, computed once and built into the jar so the app knows its version).
 # Binaries are never committed to git: README links point to releases/latest/download/<file>.
+# Platforms marked experimental may fail without blocking the release.
 name: Build and release
 
 on:
@@ -21,6 +23,8 @@ jobs:
   jar:
     name: Jar (tests, checkstyle, coverage)
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -28,7 +32,13 @@ jobs:
           distribution: corretto
           java-version: '25'
           cache: maven
-      - run: mvn -B -ntp clean install
+      - id: tag
+        run: echo "tag=$(scripts/release-tag.sh "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          mvn -B -ntp -Dcutenotes.release="${TAG#v}" clean install
       - uses: actions/upload-artifact@v4
         with:
           name: jar
@@ -38,16 +48,26 @@ jobs:
   native:
     name: Package ${{ matrix.platform }}
     needs: jar
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: true
       matrix:
         include:
           - os: macos-14
             platform: mac-arm64
+            experimental: false
           - os: windows-latest
             platform: windows-x64
+            experimental: false
           - os: ubuntu-latest
             platform: linux-x64
+            experimental: false
+          - os: macos-15-intel
+            platform: mac-x64
+            experimental: true
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            experimental: true
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -62,10 +82,19 @@ jobs:
         with:
           name: jar
           path: target
-      - run: scripts/package.sh target/cutenotes.jar dist
+      - name: Package
+        run: scripts/package.sh target/cutenotes.jar dist
       - name: Smoke test
-        if: matrix.platform == 'linux-x64'
-        run: scripts/smoke-test-linux.sh dist/cutenotes-linux-x64.tar.gz
+        # Linux has always been checked; macOS and Windows desktops on CI are still being proven.
+        continue-on-error: ${{ !startsWith(matrix.platform, 'linux') }}
+        run: >-
+          scripts/smoke-test.sh
+          dist/cutenotes-${{ matrix.platform }}.${{ startsWith(matrix.platform, 'linux') && 'tar.gz' || 'zip' }}
+      - name: Installer
+        continue-on-error: true
+        run: |
+          INSTALLERS=1 scripts/package.sh target/cutenotes.jar installer
+          cp installer/*.dmg installer/*.msi installer/*.deb dist/ 2> /dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
@@ -86,3 +115,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.jar.outputs.tag }}

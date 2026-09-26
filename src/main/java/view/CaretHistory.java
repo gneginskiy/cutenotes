@@ -1,10 +1,8 @@
 package view;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import javax.swing.AbstractAction;
 import javax.swing.KeyStroke;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.Position;
@@ -98,15 +96,6 @@ final class CaretHistory {
   }
 
   private static void bind(JTextComponent area, KeyStroke ks, String name, Runnable action) {
-    area.getInputMap().put(ks, name);
-    area.getActionMap()
-        .put(
-            name,
-            new AbstractAction() {
-              @Override
-              public void actionPerformed(ActionEvent e) {
-                action.run();
-              }
-            });
+    KeyBindings.bindFocused(area, ks, name, action);
   }
 }

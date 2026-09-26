@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -23,7 +24,9 @@ class TabHeader extends JPanel {
       Consumer<List<String>> reorder,
       Consumer<String> close,
       Consumer<String> closeOthers,
-      Runnable newTab) {}
+      Runnable newTab,
+      Function<String, String> colorOf,
+      BiConsumer<String, String> setColor) {}
 
   private final Map<String, TabChip> chipsById = new LinkedHashMap<>();
   private final Actions actions;
@@ -97,6 +100,20 @@ class TabHeader extends JPanel {
 
   int tabCount() {
     return chipsById.size();
+  }
+
+  void setTitle(String id, String name) {
+    TabChip chip = chipsById.get(id);
+    if (chip != null) {
+      chip.setTitle(name);
+    }
+  }
+
+  void setColor(String id, String color) {
+    TabChip chip = chipsById.get(id);
+    if (chip != null) {
+      chip.setColor(color);
+    }
   }
 
   String titleOf(String id) {

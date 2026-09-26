@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.Color;
 import javax.swing.ButtonGroup;
 import javax.swing.JColorChooser;
@@ -9,10 +11,10 @@ import model.Theme;
 final class ColorPalette {
 
   private final JColorChooser chooser;
-  private final ColorField bgField = new ColorField("Background", true);
-  private final ColorField fgField = new ColorField("Text", false);
-  private final ColorField caretField = new ColorField("Caret", false);
-  private final ColorField codeField = new ColorField("Code", false);
+  private final ColorField bgField = new ColorField(tr("options.bg"), true);
+  private final ColorField fgField = new ColorField(tr("options.fg"), false);
+  private final ColorField caretField = new ColorField(tr("options.caret"), false);
+  private final ColorField codeField = new ColorField(tr("options.code"), false);
   private final Runnable onChange;
   private Color bg = Theme.DEFAULT.bg();
   private Color fg = Theme.DEFAULT.fg();

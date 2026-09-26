@@ -22,12 +22,25 @@ final class GroupNodes {
    */
   static DefaultMutableTreeNode root(
       GroupData data, List<TabMeta> notes, NoteFilter filter, String ungrouped) {
+    return root(
+        data, notes, filter, Comparator.comparingInt(m -> data.orderIndex(m.id())), ungrouped);
+  }
+
+  /** As above, with notes inside each group sorted by {@code order}. */
+  static DefaultMutableTreeNode root(
+      GroupData data,
+      List<TabMeta> notes,
+      NoteFilter filter,
+      Comparator<TabMeta> order,
+      String ungrouped) {
+    List<TabMeta> sorted = new ArrayList<>(notes);
+    sorted.sort(order);
     DefaultMutableTreeNode root = new DefaultMutableTreeNode();
     for (Group g : data.childrenOf(null)) {
-      addGroup(root, g, data, notes, filter);
+      addGroup(root, g, data, sorted, filter);
     }
     DefaultMutableTreeNode bucket = new DefaultMutableTreeNode(ungrouped);
-    addNotes(bucket, null, data, notes, filter);
+    addNotes(bucket, null, data, sorted, filter);
     if (bucket.getChildCount() > 0 || (data.groups().isEmpty() && !filter.searching())) {
       root.add(bucket);
     }
@@ -60,7 +73,6 @@ final class GroupNodes {
         inGroup.add(meta);
       }
     }
-    inGroup.sort(Comparator.comparingInt(m -> data.orderIndex(m.id())));
     for (TabMeta meta : inGroup) {
       node.add(new DefaultMutableTreeNode(meta, false));
     }

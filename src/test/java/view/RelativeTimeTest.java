@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 
 class RelativeTimeTest {
 
+  static {
+    Messages.useLanguage("en");
+  }
+
   private static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
   private static final Instant NOW = ZonedDateTime.of(2026, 9, 26, 15, 30, 0, 0, ZONE).toInstant();
 

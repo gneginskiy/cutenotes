@@ -1,11 +1,9 @@
 package view;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.swing.AbstractAction;
 import javax.swing.KeyStroke;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
@@ -47,21 +45,12 @@ final class LineOps {
   }
 
   private static void bind(JTextComponent area, int key, int mod, Consumer<JTextComponent> action) {
-    String name = "line-op-" + key;
-    area.getInputMap().put(KeyStroke.getKeyStroke(key, mod), name);
-    area.getActionMap()
-        .put(
-            name,
-            new AbstractAction() {
-              @Override
-              public void actionPerformed(ActionEvent e) {
-                action.accept(area);
-              }
-            });
+    KeyBindings.bindFocused(
+        area, KeyStroke.getKeyStroke(key, mod), "line-op-" + key, () -> action.accept(area));
   }
 
   @SneakyThrows
-  private static void insertBlankLines(JTextComponent area) {
+  static void insertBlankLines(JTextComponent area) {
     int caret = area.getCaretPosition();
     area.getDocument().insertString(caret, "\n".repeat(BLANK_LINES), null);
     area.setCaretPosition(caret + BLANK_LINES);

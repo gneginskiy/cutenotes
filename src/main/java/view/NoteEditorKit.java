@@ -6,8 +6,6 @@ import javax.swing.text.ComponentView;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 import javax.swing.text.IconView;
-import javax.swing.text.LabelView;
-import javax.swing.text.ParagraphView;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
@@ -55,7 +53,7 @@ final class NoteEditorKit extends StyledEditorKit {
   private static View create(Element elem) {
     String kind = elem.getName();
     if (AbstractDocument.ParagraphElementName.equals(kind)) {
-      return new ParagraphView(elem);
+      return new NoteParagraphView(elem);
     }
     if (AbstractDocument.SectionElementName.equals(kind)) {
       return new BoxView(elem, View.Y_AXIS);
@@ -66,22 +64,6 @@ final class NoteEditorKit extends StyledEditorKit {
     if (StyleConstants.IconElementName.equals(kind)) {
       return new IconView(elem);
     }
-    return new WrappingLabelView(elem);
-  }
-
-  /**
-   * A run of text with no minimum width: the paragraph may then break it at any character when no
-   * space fits, instead of widening the whole editor to the longest word.
-   */
-  private static final class WrappingLabelView extends LabelView {
-
-    WrappingLabelView(Element elem) {
-      super(elem);
-    }
-
-    @Override
-    public float getMinimumSpan(int axis) {
-      return axis == View.X_AXIS ? 0 : super.getMinimumSpan(axis);
-    }
+    return new NoteLabelView(elem);
   }
 }

@@ -1,22 +1,26 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 
 import dao.GroupStore;
 import dao.TabRepository;
 import model.Tab;
 import model.TabMeta;
+import util.NoteIndex;
 
 /**
  * Browses every note in a group tree: type to filter and Enter to open (a quick switcher), drag to
@@ -24,25 +28,32 @@ import model.TabMeta;
  */
 class NotesBrowserDialog extends JDialog {
 
-  /** What the browser asks the owner to do: open a note, or delete it (closing its tab if open). */
-  record Callbacks(Consumer<String> open, Consumer<String> delete) {}
+  /**
+   * What the browser asks the owner to do: open a note (at a text match), delete it (closing its
+   * tab if open), show that its settings (colour) changed, or show "Recently deleted".
+   */
+  record Callbacks(
+      Consumer<String> open,
+      BiConsumer<String, String> openFound,
+      Consumer<String> delete,
+      Consumer<String> changed,
+      Runnable showTrash) {}
+
+  /** Where the browser reads from. */
+  record Source(TabRepository repo, GroupStore groups, NoteMetas metas, Set<String> openIds) {}
 
   private final GroupTree tree;
   private final transient NoteGroupActions actions;
   private final BrowserToolbar toolbar;
 
-  NotesBrowserDialog(
-      JFrame owner,
-      TabRepository repo,
-      GroupStore groups,
-      Set<String> openIds,
-      Callbacks callbacks) {
-    super(owner, "All notes", false);
+  NotesBrowserDialog(JFrame owner, Source source, Callbacks callbacks) {
+    super(owner, tr("browser.title"), false);
     UiPalette palette = UiPalette.current();
     List<TabMeta> notes =
-        repo.listMeta().stream().filter(m -> !Tab.DEFAULT_ID.equals(m.id())).toList();
-    this.tree = new GroupTree(notes, openIds, groups.read());
-    this.actions = new NoteGroupActions(this, tree, groups, callbacks);
+        source.repo().listMeta().stream().filter(m -> !Tab.DEFAULT_ID.equals(m.id())).toList();
+    this.tree = new GroupTree(notes, source.openIds(), source.groups().read(), source.metas());
+    this.actions =
+        new NoteGroupActions(this, tree, source.groups(), callbacks, new Toast(getRootPane()));
     this.toolbar = new BrowserToolbar(tree, actions, this::openBestAndClose, palette);
     tree.setOnRename(actions::rename);
     tree.setBackground(palette.bg());
@@ -55,16 +66,30 @@ class NotesBrowserDialog extends JDialog {
     add(toolbar, BorderLayout.NORTH);
     add(TabPanes.content(tree), BorderLayout.CENTER);
     bindClose();
-    setSize(440, 520);
+    setSize(560, 540);
     WindowPlacement.centerOnOwner(this);
     setAlwaysOnTop(true);
+    indexInBackground(source.repo());
   }
 
-  static void open(
-      JFrame owner, TabRepository repo, GroupStore groups, List<String> openIds, NoteSession s) {
-    new NotesBrowserDialog(
-            owner, repo, groups, new HashSet<>(openIds), new Callbacks(s::openExisting, s::delete))
-        .setVisible(true);
+  static void open(JFrame owner, Source source, Callbacks callbacks) {
+    new NotesBrowserDialog(owner, source, callbacks).setVisible(true);
+  }
+
+  /** Reading every note takes a moment: names are searchable at once, text when this is done. */
+  private void indexInBackground(TabRepository repo) {
+    Thread.ofVirtual()
+        .name("note-index")
+        .start(
+            () -> {
+              NoteIndex index = NoteIndex.build(repo);
+              SwingUtilities.invokeLater(
+                  () -> {
+                    if (isDisplayable()) {
+                      toolbar.useIndex(index);
+                    }
+                  });
+            });
   }
 
   private void openBestAndClose() {

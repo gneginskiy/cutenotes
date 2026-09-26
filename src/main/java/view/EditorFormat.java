@@ -1,14 +1,7 @@
 package view;
 
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-import javax.swing.AbstractAction;
 import javax.swing.JTextPane;
-import javax.swing.KeyStroke;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
@@ -26,20 +19,13 @@ final class EditorFormat {
 
   static void install(JTextPane pane) {
     int mask = ShortcutMask.menu();
-    int shifted = mask | InputEvent.SHIFT_DOWN_MASK;
-    bind(pane, KeyEvent.VK_B, mask, StyleConstants::isBold, StyleConstants::setBold);
-    bind(pane, KeyEvent.VK_I, mask, StyleConstants::isItalic, StyleConstants::setItalic);
-    bind(pane, KeyEvent.VK_U, mask, StyleConstants::isUnderline, StyleConstants::setUnderline);
-    bind(
-        pane,
-        KeyEvent.VK_S,
-        shifted,
-        StyleConstants::isStrikeThrough,
-        StyleConstants::setStrikeThrough);
-    bind(pane, KeyEvent.VK_C, shifted, EditorFormat::isCode, EditorFormat::styleCode);
+    for (InlineStyle style : InlineStyle.values()) {
+      KeyBindings.bindFocused(
+          pane, style.keyStroke(mask), "fmt-" + style.name(), () -> toggle(pane, style));
+    }
   }
 
-  private static boolean isCode(AttributeSet attrs) {
+  static boolean isCode(AttributeSet attrs) {
     return attrs.getAttribute(CODE) == Boolean.TRUE;
   }
 
@@ -63,46 +49,28 @@ final class EditorFormat {
     return Colors.contrast(t.bg(), 0.13f);
   }
 
-  private static void bind(
-      JTextPane pane,
-      int key,
-      int mod,
-      Predicate<AttributeSet> getter,
-      BiConsumer<MutableAttributeSet, Boolean> setter) {
-    String name = "fmt-" + key + "-" + mod;
-    pane.getInputMap().put(KeyStroke.getKeyStroke(key, mod), name);
-    pane.getActionMap()
-        .put(
-            name,
-            new AbstractAction() {
-              @Override
-              public void actionPerformed(ActionEvent e) {
-                toggle(pane, getter, setter);
-              }
-            });
-  }
-
-  private static void toggle(
-      JTextPane pane,
-      Predicate<AttributeSet> getter,
-      BiConsumer<MutableAttributeSet, Boolean> set) {
+  /**
+   * Toggles {@code style}: on the selection (off only when all of it has the style), or on the
+   * typing attributes when nothing is selected.
+   */
+  static void toggle(JTextPane pane, InlineStyle style) {
     int start = pane.getSelectionStart();
     int end = pane.getSelectionEnd();
     if (start == end) {
       MutableAttributeSet input = pane.getInputAttributes();
-      set.accept(input, !getter.test(input));
+      style.set.accept(input, !style.isSet.test(input));
       return;
     }
     StyledDocument doc = pane.getStyledDocument();
     boolean allSet = true;
     for (int i = start; i < end; i++) {
-      if (!getter.test(doc.getCharacterElement(i).getAttributes())) {
+      if (!style.isSet.test(doc.getCharacterElement(i).getAttributes())) {
         allSet = false;
         break;
       }
     }
     SimpleAttributeSet attr = new SimpleAttributeSet();
-    set.accept(attr, !allSet);
+    style.set.accept(attr, !allSet);
     doc.setCharacterAttributes(start, end - start, attr, false);
   }
 }

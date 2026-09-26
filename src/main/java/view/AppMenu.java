@@ -1,61 +1,69 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 
-/** The window's menu; every item's accelerator also works while the menu bar is hidden. */
+/**
+ * The window's menu bar: File, Edit, Format, View, Help. Window-wide shortcuts also work while the
+ * bar is hidden; editor shortcuts belong to the editor and are only shown here.
+ */
 final class AppMenu {
-
-  /** The commands behind the menu items. */
-  record Actions(
-      Runnable newTab,
-      Runnable reopenLast,
-      Runnable close,
-      Runnable browse,
-      Runnable next,
-      Runnable find,
-      Runnable options,
-      Runnable help) {}
 
   private AppMenu() {}
 
   /** {@code reveal} runs after tab commands, so the tabs bar shows what just happened. */
-  static JMenuBar build(JRootPane root, Runnable reveal, Actions a) {
+  static JMenuBar build(JRootPane root, Runnable reveal, AppCommands app) {
     int mask = ShortcutMask.menu();
-    JMenu menu = new ThemedMenu("Menu");
-    menu.add(MenuItems.make(root, reveal, "New tab", ks(KeyEvent.VK_T, mask), a.newTab()));
+    boolean mac = PlatformLook.MAC;
+    HelpCommands help = new HelpCommands(app.context().frame(), app.context().toast());
+    JMenuBar bar = new ThemedMenuBar();
+    bar.add(file(root, reveal, app, mask));
+    bar.add(EditMenus.edit(root, app, mask, mac));
+    bar.add(EditMenus.format(app.context().tabs(), mask));
+    bar.add(ViewHelpMenus.view(root, reveal, app, mask, mac));
+    bar.add(ViewHelpMenus.help(help));
+    KeyBindings.bind(root, ks(KeyEvent.VK_F1, 0), "help", help::shortcuts);
+    return bar;
+  }
+
+  private static JMenu file(JRootPane root, Runnable reveal, AppCommands app, int mask) {
+    JMenu menu = new ThemedMenu(tr("menu.file"));
+    menu.add(
+        MenuItems.make(root, reveal, tr("menu.file.newTab"), ks(KeyEvent.VK_T, mask), app::newTab));
+    menu.add(
+        MenuItems.make(
+            root, reveal, tr("menu.file.allNotes"), ks(KeyEvent.VK_R, mask), app::browse));
+    menu.add(RecentMenu.build(app));
     menu.add(
         MenuItems.make(
             root,
             reveal,
-            "Reopen closed tab",
+            tr("menu.file.reopen"),
             ks(KeyEvent.VK_T, mask | InputEvent.SHIFT_DOWN_MASK),
-            a.reopenLast()));
-    menu.add(MenuItems.make(root, reveal, "Close tab", ks(KeyEvent.VK_W, mask), a.close()));
-    menu.add(MenuItems.make(root, reveal, "All notes…", ks(KeyEvent.VK_R, mask), a.browse()));
-    for (int modifier : PlatformKeys.nextTabModifiers(PlatformLook.MAC)) {
-      menu.add(nextTab(root, reveal, modifier, a.next()));
-    }
+            app::reopenLast));
+    menu.add(
+        MenuItems.make(
+            root, reveal, tr("menu.file.closeTab"), ks(KeyEvent.VK_W, mask), app::closeTab));
     menu.addSeparator();
-    menu.add(MenuItems.make(root, reveal, "Find…", ks(KeyEvent.VK_F, mask), a.find()));
+    NoteMenuItems.add(menu, root, app, mask);
     menu.addSeparator();
-    menu.add(MenuItems.make(root, () -> {}, "Options…", ks(KeyEvent.VK_O, mask), a.options()));
-    menu.add(MenuItems.make(root, () -> {}, "Keyboard shortcuts", ks(KeyEvent.VK_F1, 0), a.help()));
-    JMenuBar bar = new ThemedMenuBar();
-    bar.add(menu);
-    return bar;
+    menu.add(
+        MenuItems.make(
+            root,
+            () -> {},
+            tr("menu.file.options"),
+            ks(KeyEvent.VK_O, mask),
+            app.context().options()::openDialog));
+    return menu;
   }
 
-  private static JMenuItem nextTab(JRootPane root, Runnable reveal, int modifier, Runnable next) {
-    return MenuItems.make(root, reveal, "Next tab", ks(KeyEvent.VK_TAB, modifier), next);
-  }
-
-  private static KeyStroke ks(int keyCode, int modifiers) {
+  static KeyStroke ks(int keyCode, int modifiers) {
     return KeyStroke.getKeyStroke(keyCode, modifiers);
   }
 }

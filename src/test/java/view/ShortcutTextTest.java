@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 
 class ShortcutTextTest {
 
+  static {
+    Messages.useLanguage("en");
+  }
+
   @Test
   void combinationsBecomeKeysAndMacModifiersBecomeSymbols() {
     List<ShortcutText.Alt> alts = ShortcutText.parse("Cmd+Shift+T / Option+Tab", true);

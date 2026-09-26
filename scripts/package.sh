@@ -4,9 +4,15 @@
 # to be installed on the user's machine):
 #
 #   macOS (Apple silicon)  <out>/cutenotes-mac-arm64.zip       cuteNotes.app
+#   macOS (Intel)          <out>/cutenotes-mac-x64.zip         cuteNotes.app
 #   Windows x64            <out>/cutenotes-windows-x64.zip     cuteNotes\cuteNotes.exe
-#   Linux x64              <out>/cutenotes-linux-x64.tar.gz    cuteNotes/bin/cuteNotes
+#   Linux x64 / arm64      <out>/cutenotes-linux-<arch>.tar.gz cuteNotes/bin/cuteNotes
 #
+# With INSTALLERS=1 it also builds the installer of the platform: cutenotes-mac-<arch>.dmg,
+# cutenotes-windows-x64.msi (needs the WiX Toolset) or cutenotes-linux-<arch>.deb.
+#
+# The version the app shows is built into the jar (mvn -Dcutenotes.release=…); the numeric package
+# version comes from the commit date.
 # jpackage cannot build for another OS, so CI runs this on a macOS, a Windows and a Linux runner
 # (.github/workflows/release.yml). Locally it builds the package of your own machine.
 #
@@ -18,15 +24,18 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 JAR_ARG="${1:-$ROOT/target/cutenotes.jar}"
 JAR="$(cd "$(dirname "$JAR_ARG")" && pwd)/$(basename "$JAR_ARG")"
 OUT="${2:-$ROOT/target/dist}"
-MODULES="java.base,java.desktop"
-JLINK_OPTS="--strip-debug --no-man-pages --no-header-files --compress=zip-6"
+# jdeps --print-module-deps target/cutenotes.jar, plus Russian dates and screen reader support.
+MODULES="java.base,java.desktop,java.logging,java.net.http,jdk.localedata,jdk.accessibility"
+JLINK_OPTS="--strip-debug --no-man-pages --no-header-files --compress=zip-6 --include-locales=en,ru"
 LAUNCH_OPTS="-Dcutenotes.installed=true"
 JPACKAGE="${JAVA_HOME:+$JAVA_HOME/bin/}jpackage"
 
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64) PLATFORM=mac-arm64 ;;
+  Darwin-x86_64) PLATFORM=mac-x64 ;;
   MINGW*-x86_64 | MSYS*-x86_64 | CYGWIN*-x86_64) PLATFORM=windows-x64 ;;
   Linux-x86_64) PLATFORM=linux-x64 ;;
+  Linux-aarch64) PLATFORM=linux-arm64 ;;
   *) echo "Unsupported platform: $(uname -s)-$(uname -m)" >&2; exit 1 ;;
 esac
 
@@ -38,8 +47,26 @@ trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/input" "$WORK/image"
 cp "$JAR" "$WORK/input/cutenotes.jar"
 
-# jpackage wants a numeric version; Windows caps the first two parts at 255, hence YY.M.D.
-VERSION="$(date -u +%Y-%m-%d | awk -F- '{printf "%d.%d.%d", $1 - 2000, $2, $3}')"
+# jpackage wants a numeric version; Windows caps the first two parts at 255, hence YY.M.D of the
+# commit (today when not in a git checkout).
+DAY="$(git -C "$ROOT" log -1 --date=format:%Y-%m-%d --format=%ad 2> /dev/null || date -u +%Y-%m-%d)"
+VERSION="$(echo "$DAY" | awk -F- '{printf "%d.%d.%d", $1 - 2000, $2, $3}')"
+
+# The icon, drawn by the app itself.
+JAVA="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
+SEP=":"
+[[ "$PLATFORM" == windows-* ]] && SEP=";"
+mkdir -p "$WORK/icon-tool"
+"$JAVAC" -d "$WORK/icon-tool" -cp "$JAR" "$ROOT/scripts/icons/IconFiles.java"
+"$JAVA" -Djava.awt.headless=true -cp "$JAR$SEP$WORK/icon-tool" IconFiles "$WORK/icons"
+case "$PLATFORM" in
+  mac-*)
+    iconutil -c icns "$WORK/icons/cuteNotes.iconset" -o "$WORK/icons/cuteNotes.icns"
+    ICON="$WORK/icons/cuteNotes.icns" ;;
+  windows-*) ICON="$WORK/icons/cuteNotes.ico" ;;
+  *) ICON="$WORK/icons/cuteNotes.png" ;;
+esac
 
 cd "$WORK"
 extra=()
@@ -49,7 +76,7 @@ fi
 "$JPACKAGE" --type app-image --dest image --name cuteNotes --app-version "$VERSION" \
   --vendor "Grigorii Neginskii" --input input --main-jar cutenotes.jar \
   --main-class cutenotes.Main --java-options "$LAUNCH_OPTS" \
-  --add-modules "$MODULES" --jlink-options "$JLINK_OPTS" "${extra[@]}"
+  --add-modules "$MODULES" --jlink-options "$JLINK_OPTS" --icon "$ICON" "${extra[@]}"
 
 readme() {
   cat <<EOF
@@ -66,7 +93,7 @@ EOF
 }
 
 case "$PLATFORM" in
-  mac-arm64)
+  mac-*)
     codesign --verify --deep --strict image/cuteNotes.app
     readme "Unzip, move cuteNotes.app to Applications and open it. The app is not
 notarized: on the first start macOS asks for confirmation
@@ -83,7 +110,7 @@ notarized: on the first start macOS asks for confirmation
     rm -f "$ARCHIVE"
     (cd image && 7z a -tzip -bso0 -bsp0 "$ARCHIVE" cuteNotes)
     ;;
-  linux-x64)
+  linux-*)
     readme "Unpack (tar -xzf) and run cuteNotes/bin/cuteNotes. Needs a desktop session
 (X11 or XWayland) with the usual X, fontconfig and freetype libraries." \
       > image/cuteNotes/README.txt
@@ -93,3 +120,18 @@ notarized: on the first start macOS asks for confirmation
 esac
 
 echo "$ARCHIVE"
+
+# The installer, made from the same app image.
+if [[ "${INSTALLERS:-0}" == 1 ]]; then
+  case "$PLATFORM" in
+    mac-*) TYPE=dmg ;;
+    windows-*) TYPE=msi; extra+=(--win-menu --win-shortcut --win-dir-chooser) ;;
+    linux-*) TYPE=deb; extra+=(--linux-shortcut --linux-menu-group Office) ;;
+  esac
+  mkdir -p installer
+  "$JPACKAGE" --type "$TYPE" --dest installer --name cuteNotes --app-version "$VERSION" \
+    --vendor "Grigorii Neginskii" --app-image "image/$(ls image | grep -v README)" --icon "$ICON" \
+    "${extra[@]}"
+  mv installer/* "$OUT/cutenotes-$PLATFORM.$TYPE"
+  echo "$OUT/cutenotes-$PLATFORM.$TYPE"
+fi

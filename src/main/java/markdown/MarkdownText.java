@@ -31,7 +31,7 @@ public final class MarkdownText {
       return MarkdownEscape.unescape(md, i, text);
     }
     int[] advance = new int[1];
-    MdImage image = starts(md, i, "![") ? image(md, i, advance) : null;
+    MdImage image = starts(md, i, "![") ? ImageSyntax.parse(md, i, advance) : null;
     if (image != null) {
       flush(nodes, text, style);
       nodes.add(image);
@@ -73,13 +73,24 @@ public final class MarkdownText {
     return length;
   }
 
+  /** The text of a note without Markdown markers; images are left out. */
+  public static String plain(String md) {
+    StringBuilder out = new StringBuilder();
+    for (MdNode node : parse(md)) {
+      if (node instanceof MdText t) {
+        out.append(t.text());
+      }
+    }
+    return out.toString();
+  }
+
   public static String write(List<MdNode> nodes) {
     StringBuilder out = new StringBuilder();
     for (MdNode node : nodes) {
       if (node instanceof MdText t) {
         writeText(out, t);
       } else if (node instanceof MdImage img) {
-        writeImage(out, img);
+        ImageSyntax.write(out, img);
       }
     }
     return out.toString();
@@ -96,14 +107,6 @@ public final class MarkdownText {
     out.append(strike).append(underline).append(italic).append(bold).append(code);
   }
 
-  private static void writeImage(StringBuilder out, MdImage img) {
-    out.append("![");
-    if (img.width() > 0 && img.height() > 0) {
-      out.append('|').append(img.width()).append('x').append(img.height());
-    }
-    out.append("](").append(img.path()).append(')');
-  }
-
   private static void flush(List<MdNode> nodes, StringBuilder text, boolean[] style) {
     if (text.length() > 0) {
       nodes.add(new MdText(text.toString(), style[0], style[1], style[2], style[3], style[4]));
@@ -113,35 +116,5 @@ public final class MarkdownText {
 
   private static boolean starts(String md, int i, String token) {
     return md.regionMatches(i, token, 0, token.length());
-  }
-
-  private static MdImage image(String md, int i, int[] advance) {
-    int altEnd = md.indexOf("](", i + 2);
-    if (altEnd < 0) {
-      return null;
-    }
-    int pathEnd = md.indexOf(')', altEnd + 2);
-    if (pathEnd < 0) {
-      return null;
-    }
-    String alt = md.substring(i + 2, altEnd);
-    String path = md.substring(altEnd + 2, pathEnd);
-    advance[0] = pathEnd + 1;
-    int width = 0;
-    int height = 0;
-    int x = alt.startsWith("|") ? alt.indexOf('x', 1) : -1;
-    if (x > 0) {
-      width = parseInt(alt.substring(1, x));
-      height = parseInt(alt.substring(x + 1));
-    }
-    return new MdImage(path, width, height);
-  }
-
-  private static int parseInt(String s) {
-    try {
-      return Integer.parseInt(s.trim());
-    } catch (NumberFormatException e) {
-      return 0;
-    }
   }
 }

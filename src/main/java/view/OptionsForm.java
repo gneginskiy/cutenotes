@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -43,9 +45,9 @@ final class OptionsForm {
   private static JPanel buildTop(JComponent presets, JComponent preview) {
     JPanel p = new JPanel();
     p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-    p.add(left(caption("Theme")));
+    p.add(left(caption(tr("options.theme"))));
     p.add(left(presets));
-    JLabel previewCaption = caption("Preview");
+    JLabel previewCaption = caption(tr("options.preview"));
     previewCaption.setBorder(BorderFactory.createEmptyBorder(12, 0, 6, 0));
     p.add(left(previewCaption));
     JScrollPane scroller = new JScrollPane(preview);
@@ -66,7 +68,7 @@ final class OptionsForm {
     row.add(colors.code());
     row.add(Box.createHorizontalGlue());
     Box top = Box.createVerticalBox();
-    top.add(left(caption("Colours")));
+    top.add(left(caption(tr("options.colours"))));
     top.add(left(row));
     p.add(top, BorderLayout.NORTH);
     p.add(chooser, BorderLayout.CENTER);
@@ -75,24 +77,30 @@ final class OptionsForm {
 
   private static JPanel buildBottom(OptionsFields f, Actions actions) {
     Box settings = Box.createVerticalBox();
-    settings.add(left(caption("Text & window")));
-    settings.add(left(row(new JLabel("Font "), f.fontBox(), new JLabel("  Size "), f.sizeSpin())));
+    settings.add(left(caption(tr("options.textWindow"))));
+    settings.add(
+        left(
+            row(
+                new JLabel(tr("options.font") + " "),
+                f.fontBox(),
+                new JLabel("  " + tr("options.size") + " "),
+                f.sizeSpin())));
     settings.add(Box.createVerticalStrut(6));
-    settings.add(left(row(new JLabel("Window title "), f.titleField())));
+    settings.add(left(row(new JLabel(tr("options.windowTitle") + " "), f.titleField())));
     settings.add(Box.createVerticalStrut(4));
     settings.add(left(row(f.alwaysOnTop())));
     Box buttons = Box.createHorizontalBox();
-    buttons.add(btn("Reset to default", actions.reset()));
+    buttons.add(btn(tr("options.reset"), actions.reset()));
     buttons.add(Box.createHorizontalGlue());
-    buttons.add(btn("Cancel", actions.cancel()));
-    buttons.add(btn("OK", actions.ok()));
+    buttons.add(btn(tr("options.cancel"), actions.cancel()));
+    buttons.add(btn(tr("options.ok"), actions.ok()));
     JPanel p = new JPanel(new BorderLayout(0, 12));
     p.add(settings, BorderLayout.NORTH);
     p.add(buttons, BorderLayout.SOUTH);
     return p;
   }
 
-  private static JLabel caption(String text) {
+  static JLabel caption(String text) {
     JLabel l = new JLabel(text);
     l.setFont(l.getFont().deriveFont(Font.BOLD, 11f));
     l.setForeground(CAPTION);
@@ -100,7 +108,7 @@ final class OptionsForm {
     return l;
   }
 
-  private static Box row(JComponent... parts) {
+  static Box row(JComponent... parts) {
     Box b = Box.createHorizontalBox();
     for (JComponent part : parts) {
       b.add(part);
@@ -109,7 +117,7 @@ final class OptionsForm {
     return b;
   }
 
-  private static <T extends JComponent> T left(T c) {
+  static <T extends JComponent> T left(T c) {
     c.setAlignmentX(JComponent.LEFT_ALIGNMENT);
     return c;
   }

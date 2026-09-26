@@ -31,6 +31,9 @@
         <spotless.version>3.0.0</spotless.version>
         <google-java-format.version>1.28.0</google-java-format.version>
 
+        <!-- Release id shown in the app (CI passes -Dcutenotes.release=vYYYY-MM-DD[-N]) -->
+        <cutenotes.release>dev</cutenotes.release>
+
         <!-- Coverage threshold -->
         <jacoco.coverage.minimum>0.80</jacoco.coverage.minimum>
     </properties>
@@ -55,6 +58,22 @@
 
     <build>
         <finalName>${project.artifactId}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>cutenotes/version.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>cutenotes/version.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <!-- Maven Compiler Plugin -->
             <plugin>

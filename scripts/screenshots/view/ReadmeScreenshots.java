@@ -113,7 +113,9 @@ public final class ReadmeScreenshots {
     fields.load(t);
     preview.render(t);
     presets.highlight(t);
-    JPanel content =
+    javax.swing.JTabbedPane content = new javax.swing.JTabbedPane();
+    content.addTab(
+        Messages.tr("options.tabTheme"),
         OptionsForm.build(
             presets,
             preview,
@@ -121,7 +123,11 @@ public final class ReadmeScreenshots {
                 palette.bgField(), palette.fgField(), palette.caretField(), palette.codeField()),
             chooser,
             fields,
-            new OptionsForm.Actions(() -> {}, () -> {}, () -> {}));
+            new OptionsForm.Actions(() -> {}, () -> {}, () -> {})));
+    content.addTab(
+        Messages.tr("options.tabApp"),
+        AppSettingsPanel.build(
+            new AppSettingsPanel.Hooks(m -> {}, () -> {}, () -> {}, () -> {}, () -> {})));
     Dimension size = content.getPreferredSize();
     save("img3.png", dialogFrame(content, size.width, size.height + TITLE_BAR, "Options"));
   }

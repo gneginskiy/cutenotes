@@ -29,7 +29,7 @@ class TreeReorder extends MouseInputAdapter {
 
   @Override
   public void mousePressed(MouseEvent e) {
-    source = tree.searching() ? null : tree.getPathForLocation(e.getX(), e.getY());
+    source = tree.query().reorderable() ? tree.getPathForLocation(e.getX(), e.getY()) : null;
     pressY = e.getY();
     dragging = false;
   }

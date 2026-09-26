@@ -53,6 +53,8 @@ final class TabChipMouse extends MouseAdapter {
             () -> header.startRename(id),
             () -> actions.close().accept(id),
             () -> actions.closeOthers().accept(id),
-            header.tabCount() > 1));
+            header.tabCount() > 1,
+            actions.colorOf().apply(id),
+            color -> actions.setColor().accept(id, color)));
   }
 }

@@ -15,6 +15,7 @@ final class OpenTabs {
 
   private final List<String> order = new ArrayList<>();
   private final Map<String, TabState> stateById = new HashMap<>();
+  private final TabHistory closed = new TabHistory();
   private String activeId;
 
   boolean contains(String id) {
@@ -30,10 +31,11 @@ final class OpenTabs {
     stateById.put(id, state);
   }
 
-  /** Forgets {@code id}; returns its state, or null when it was not open. */
+  /** Forgets {@code id} (remembering it as recently closed); returns its state, or null. */
   TabState remove(String id) {
     TabState state = id == null ? null : stateById.remove(id);
     if (state != null) {
+      closed.record(id);
       order.remove(id);
       if (id.equals(activeId)) {
         activeId = null;
@@ -48,6 +50,11 @@ final class OpenTabs {
       return null;
     }
     return order.get(Math.max(0, Math.min(order.size() - 1, closedIndex - 1)));
+  }
+
+  /** The most recently closed tab that is not open again; null when there is none. */
+  String popReopenable() {
+    return closed.popReopenable(order);
   }
 
   int indexOf(String id) {
@@ -69,6 +76,20 @@ final class OpenTabs {
   /** The tab after the active one, wrapping around; null with fewer than two tabs. */
   String next() {
     return order.size() < 2 ? null : order.get((order.indexOf(activeId) + 1) % order.size());
+  }
+
+  /** The tab before the active one, wrapping around; null with fewer than two tabs. */
+  String previous() {
+    int n = order.size();
+    return n < 2 ? null : order.get((order.indexOf(activeId) - 1 + n) % n);
+  }
+
+  /** The tab at {@code index}; -1 (or beyond the end) means the last one; null without tabs. */
+  String atPosition(int index) {
+    if (order.isEmpty()) {
+      return null;
+    }
+    return order.get(index < 0 || index >= order.size() ? order.size() - 1 : index);
   }
 
   void reorder(List<String> ids) {

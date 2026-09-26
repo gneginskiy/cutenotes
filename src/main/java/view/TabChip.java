@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -10,7 +12,6 @@ import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 /**
@@ -26,7 +27,7 @@ final class TabChip extends JPanel {
   private final JLabel title = new JLabel();
   private final FlatButton close;
   private transient UiPalette palette = UiPalette.current();
-  private JTextField editor;
+  private final transient ChipEditing editing = new ChipEditing(this);
   private boolean active;
   private boolean hover;
 
@@ -35,7 +36,7 @@ final class TabChip extends JPanel {
     setOpaque(false);
     setBorder(BorderFactory.createEmptyBorder(TOP_GAP, 14, 0, 6));
     title.setFont(UiFonts.ui(Font.PLAIN, 13f));
-    close = new FlatButton(VectorIcon.Kind.CLOSE, 12, "Close tab", onClose);
+    close = new FlatButton(VectorIcon.Kind.CLOSE, 12, tr("tab.close"), onClose);
     close.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
     close.setGhost(true);
     add(title, BorderLayout.CENTER);
@@ -60,6 +61,13 @@ final class TabChip extends JPanel {
     close.addMouseListener(hoverTracker);
   }
 
+  /** Marks the tab with a note colour (a dot before the title); empty for none. */
+  void setColor(String color) {
+    title.setIcon(NoteColors.dot(color, 7));
+    title.setIconTextGap(6);
+    setTitle(title.getText());
+  }
+
   String title() {
     return title.getText();
   }
@@ -67,14 +75,12 @@ final class TabChip extends JPanel {
   void setTitle(String name) {
     title.setText(name);
     setToolTipText(name);
+    getAccessibleContext().setAccessibleName(name);
+    close.getAccessibleContext().setAccessibleName(tr("tab.close") + ": " + name);
     Dimension pref = title.getUI() == null ? null : title.getUI().getPreferredSize(title);
     int width = pref == null ? MAX_TITLE_PX : Math.min(pref.width, MAX_TITLE_PX);
     title.setPreferredSize(new Dimension(width, pref == null ? 16 : pref.height));
     revalidate();
-  }
-
-  boolean isActive() {
-    return active;
   }
 
   void setActive(boolean value) {
@@ -83,7 +89,7 @@ final class TabChip extends JPanel {
   }
 
   boolean isEditing() {
-    return editor != null;
+    return editing.active();
   }
 
   void applyPalette(UiPalette p) {
@@ -94,33 +100,7 @@ final class TabChip extends JPanel {
 
   /** Swaps the title for an inline field; {@code done} gets the text, or null when cancelled. */
   void startEdit(Consumer<String> done) {
-    if (editor != null) {
-      return;
-    }
-    editor =
-        InlineEditor.create(
-            title.getText(),
-            title.getFont(),
-            palette,
-            (f, text) -> finishEdit(done, text),
-            f -> finishEdit(done, null));
-    remove(title);
-    add(editor, BorderLayout.CENTER);
-    revalidate();
-    repaint();
-    editor.requestFocusInWindow();
-  }
-
-  private void finishEdit(Consumer<String> done, String text) {
-    if (editor == null) {
-      return;
-    }
-    remove(editor);
-    editor = null;
-    add(title, BorderLayout.CENTER);
-    revalidate();
-    repaint();
-    done.accept(text);
+    editing.start(title, palette, done);
   }
 
   private void setHover(boolean value) {

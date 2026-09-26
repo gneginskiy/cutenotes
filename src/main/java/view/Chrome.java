@@ -7,7 +7,10 @@ import javax.swing.KeyStroke;
 
 final class Chrome {
 
-  Chrome(JFrame frame, JMenuBar bar, TabsPane tabs, SearchBar search) {
+  private Chrome() {}
+
+  /** Installs the (hidden until Esc) menu bar and the Esc toggle for menu, tabs and search. */
+  static void install(JFrame frame, JMenuBar bar, TabsPane tabs, SearchBar search) {
     frame.setJMenuBar(bar);
     MenuTheme.apply(bar, ThemeHolder.current());
     Revealer menu = new Revealer(bar, frame.getRootPane());
@@ -19,8 +22,9 @@ final class Chrome {
   }
 
   private static void onEscape(Revealer menu, TabsPane tabs, SearchBar search) {
-    Revealer tabsRev = tabs.revealer();
-    boolean anyOpen = menu.isShown() || search.isVisible() || (tabsRev.isShown() && !tabs.pinned());
+    Revealer tabsRev = tabs.strip().revealer();
+    boolean anyOpen =
+        menu.isShown() || search.isVisible() || (tabsRev.isShown() && !tabs.strip().pinned());
     if (anyOpen) {
       menu.hide();
       tabsRev.hide();

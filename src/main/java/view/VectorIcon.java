@@ -24,7 +24,8 @@ final class VectorIcon implements Icon {
     PIN,
     PIN_ON,
     NOTE,
-    FOLDER
+    FOLDER,
+    TRASH
   }
 
   private static final float STROKE = 1.5f;

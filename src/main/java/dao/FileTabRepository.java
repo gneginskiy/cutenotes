@@ -1,10 +1,13 @@
 package dao;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -79,6 +82,36 @@ public class FileTabRepository implements TabRepository {
     if (p != null) {
       Files.deleteIfExists(p);
     }
+  }
+
+  @Override
+  @SneakyThrows
+  public void trash(String id) {
+    Path p = findFileById(id);
+    if (p != null) {
+      moveInto(p, baseDir.resolve(FileTrashBin.DIR));
+    }
+  }
+
+  @Override
+  public TrashBin trashBin() {
+    return new FileTrashBin(this, new FileTabRepository(baseDir.resolve(FileTrashBin.DIR)));
+  }
+
+  /** Moves a note file into {@code dir}, dated now (for the bin: the moment of deletion). */
+  static void moveInto(Path file, Path dir) throws IOException {
+    Files.createDirectories(dir);
+    Path target = dir.resolve(file.getFileName());
+    Files.move(file, target, StandardCopyOption.REPLACE_EXISTING);
+    Files.setLastModifiedTime(target, FileTime.from(Instant.now()));
+  }
+
+  Path dir() {
+    return baseDir;
+  }
+
+  Path fileOf(String id) {
+    return findFileById(id);
   }
 
   @Override

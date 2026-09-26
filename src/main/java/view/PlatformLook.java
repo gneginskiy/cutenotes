@@ -1,5 +1,6 @@
 package view;
 
+import java.awt.Taskbar;
 import java.util.Locale;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -60,9 +61,27 @@ public final class PlatformLook {
     if (!MAC) {
       return;
     }
-    boolean fits = Colors.isDark(p.chrome()) == darkAppearance;
+    boolean fits = titleBarFits(p);
     frame.getRootPane().putClientProperty(TRANSPARENT_TITLE, fits);
     frame.setBackground(p.chrome());
+  }
+
+  /** Whether the macOS title text still suits the theme (always true elsewhere). */
+  static boolean titleBarFits(UiPalette p) {
+    return !MAC || Colors.isDark(p.chrome()) == darkAppearance;
+  }
+
+  /** The cuteNotes icon on the window, the taskbar and — when run as a jar — the Dock. */
+  static void installIcons(JFrame frame) {
+    frame.setIconImages(AppIcon.images());
+    if (Taskbar.isTaskbarSupported()
+        && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)) {
+      try {
+        Taskbar.getTaskbar().setIconImage(AppIcon.image(512));
+      } catch (UnsupportedOperationException | SecurityException e) {
+        // keep the default icon
+      }
+    }
   }
 
   private static void setIfAbsent(String key, String value) {

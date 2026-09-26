@@ -57,6 +57,11 @@ public final class ThemePresets {
 
   private ThemePresets() {}
 
+  /** The preset called {@code name}; Paper for an unknown name. */
+  public static ThemePreset named(String name) {
+    return ALL.stream().filter(p -> p.name().equals(name)).findFirst().orElse(PAPER);
+  }
+
   private static Color rgb(int hex) {
     return new Color(hex);
   }

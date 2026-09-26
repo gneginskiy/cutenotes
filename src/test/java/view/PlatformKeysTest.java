@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test;
 
 class PlatformKeysTest {
 
+  static {
+    Messages.useLanguage("en");
+  }
+
   private static final int CMD = InputEvent.META_DOWN_MASK;
   private static final int CTRL = InputEvent.CTRL_DOWN_MASK;
   private static final int ALT = InputEvent.ALT_DOWN_MASK;

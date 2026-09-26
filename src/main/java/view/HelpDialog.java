@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
@@ -20,7 +22,7 @@ class HelpDialog extends JDialog {
   private static final double SCREEN_FILL = 0.92;
 
   HelpDialog(JFrame owner) {
-    super(owner, "Keyboard Shortcuts", false);
+    super(owner, tr("help.title"), false);
     JPanel content = buildContent(UiPalette.current());
     setContentPane(content);
     Dialogs.bindEscape(this);
@@ -59,14 +61,14 @@ class HelpDialog extends JDialog {
     columns.setOpaque(false);
     columns.add(
         new HelpSections(p, mac)
-            .section("Tabs", HelpRows.tabs(mac))
-            .section("Display", HelpRows.display(mac))
+            .section(tr("help.section.tabs"), HelpRows.tabs(mac))
+            .section(tr("help.section.formatting"), HelpRows.formatting(mac))
             .end()
             .panel());
     columns.add(
         new HelpSections(p, mac)
-            .section("Editing", HelpRows.editing(mac))
-            .section("Formatting", HelpRows.formatting(mac))
+            .section(tr("help.section.editing"), HelpRows.editing(mac))
+            .section(tr("help.section.display"), HelpRows.display(mac))
             .end()
             .panel());
     JPanel root = new JPanel(new BorderLayout(0, 20));
@@ -78,10 +80,10 @@ class HelpDialog extends JDialog {
   }
 
   private static JPanel title(UiPalette p) {
-    JLabel title = new JLabel("Keyboard shortcuts");
+    JLabel title = new JLabel(tr("help.title"));
     title.setFont(UiFonts.ui(Font.BOLD, 20f));
     title.setForeground(p.fg());
-    JLabel hint = new JLabel("Press Esc to close");
+    JLabel hint = new JLabel(tr("help.hint"));
     hint.setFont(UiFonts.ui(Font.PLAIN, 12f));
     hint.setForeground(p.muted());
     JPanel box = new JPanel(new BorderLayout(0, 2));

@@ -75,4 +75,10 @@ class MarkdownTextTest {
 
     assertInstanceOf(MdText.class, nodes.get(0));
   }
+
+  @org.junit.jupiter.api.Test
+  void plainTextDropsMarkersAndImages() {
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "bold and code ", MarkdownText.plain("**bold** and ```code``` ![|4x4](images/a.png)"));
+  }
 }

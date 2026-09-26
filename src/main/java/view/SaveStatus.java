@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.Component;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -15,7 +17,9 @@ import util.SaveListener;
  */
 final class SaveStatus implements SaveListener {
 
-  static final String WARNING = "⚠ NOT SAVED — ";
+  static String warning() {
+    return tr("save.warning");
+  }
 
   private final Consumer<String> titleSink;
   private final Consumer<Exception> alert;
@@ -32,11 +36,8 @@ final class SaveStatus implements SaveListener {
     return failure ->
         JOptionPane.showMessageDialog(
             parent.isShowing() ? parent : null,
-            "Notes cannot be saved: "
-                + failure.getMessage()
-                + "\nYour text is still in the window. Saving resumes automatically"
-                + " once the problem is fixed.",
-            "Saving failed",
+            tr("save.failed", failure.getMessage()),
+            tr("save.failedTitle"),
             JOptionPane.WARNING_MESSAGE);
   }
 
@@ -44,8 +45,8 @@ final class SaveStatus implements SaveListener {
     return () ->
         JOptionPane.showConfirmDialog(
                 parent,
-                "Some notes could not be saved and will be lost.\nQuit anyway?",
-                "Saving failed",
+                tr("save.quitUnsaved"),
+                tr("save.failedTitle"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE)
             == JOptionPane.YES_OPTION;
@@ -71,6 +72,6 @@ final class SaveStatus implements SaveListener {
   }
 
   private void render() {
-    titleSink.accept(failing ? WARNING + title : title);
+    titleSink.accept(failing ? warning() + title : title);
   }
 }

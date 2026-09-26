@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Test;
 
 class ZoomTest {
 
+  static {
+    Messages.useLanguage("en");
+  }
+
   @Test
   void stepsMoveToTheNeighbouringLevel() {
     assertEquals(16, Zoom.stepFrom(15, 1));

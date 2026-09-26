@@ -1,9 +1,7 @@
 package view;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import javax.swing.AbstractAction;
 import javax.swing.KeyStroke;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
@@ -22,6 +20,10 @@ final class EditorUndo implements UndoableEditListener {
 
   private final UndoManager manager = new UndoManager();
   private CompoundEdit group;
+
+  private static void bind(JTextComponent area, KeyStroke ks, Runnable action) {
+    KeyBindings.bindFocused(area, ks, ks.toString(), action);
+  }
 
   EditorUndo(JTextComponent area) {
     manager.setLimit(LIMIT);
@@ -72,19 +74,5 @@ final class EditorUndo implements UndoableEditListener {
     if (manager.canRedo()) {
       manager.redo();
     }
-  }
-
-  private static void bind(JTextComponent area, KeyStroke ks, Runnable action) {
-    Object name = ks.toString();
-    area.getInputMap().put(ks, name);
-    area.getActionMap()
-        .put(
-            name,
-            new AbstractAction() {
-              @Override
-              public void actionPerformed(ActionEvent e) {
-                action.run();
-              }
-            });
   }
 }

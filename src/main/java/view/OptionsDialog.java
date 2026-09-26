@@ -1,9 +1,12 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.util.function.Consumer;
 import javax.swing.JColorChooser;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
@@ -20,11 +23,13 @@ class OptionsDialog extends JDialog {
   private final PresetRow presets = new PresetRow(this::pickPreset);
   private final Consumer<Theme> onApply;
 
-  OptionsDialog(JFrame owner, Consumer<Theme> onApply) {
-    super(owner, "Options", false);
+  OptionsDialog(JFrame owner, Consumer<Theme> onApply, AppSettingsPanel.Hooks hooks) {
+    super(owner, tr("options.title"), false);
     this.onApply = onApply;
     ColorChoosers.compact(chooser);
-    setContentPane(
+    JTabbedPane pages = new JTabbedPane();
+    pages.addTab(
+        tr("options.tabTheme"),
         OptionsForm.build(
             presets,
             preview,
@@ -33,6 +38,8 @@ class OptionsDialog extends JDialog {
             chooser,
             fields,
             new OptionsForm.Actions(this::reset, this::hideFast, this::applyAndClose)));
+    pages.addTab(tr("options.tabApp"), AppSettingsPanel.build(hooks));
+    setContentPane(pages);
     Dialogs.bindEscape(this, this::hideFast);
     setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
     pack();

@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
@@ -30,7 +32,7 @@ final class ThemePreview extends JTextPane {
     EditorFormat.styleCode(code, true, t);
     try {
       doc.remove(0, doc.getLength());
-      doc.insertString(0, "The quick brown fox jumps over the lazy dog.\n", null);
+      doc.insertString(0, tr("options.previewText") + "\n", null);
       doc.insertString(doc.getLength(), "code = 42;", code);
     } catch (BadLocationException e) {
       throw new IllegalStateException(e);

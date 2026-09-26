@@ -227,6 +227,43 @@ class NoteEditorTest {
     return preview;
   }
 
+  @Test
+  void aParagraphWithAnImageGetsNoExtraLineSpacing() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          NoteEditor editor = new NoteEditor("");
+          BufferedImage img = new BufferedImage(100, 200, BufferedImage.TYPE_INT_ARGB);
+          insert(editor, 0, " ", ImageAttr.of("images/x.png", img, 100, 200));
+          insert(editor, 1, "\nnext line");
+          editor.setSize(400, 800);
+          try {
+            double imageTop = editor.modelToView2D(0).getY();
+            double nextTop = editor.modelToView2D(2).getY();
+            assertTrue(nextTop - imageTop < 200 * 1.05, "no 15 % gap under the image");
+            assertTrue(nextTop - imageTop >= 200, "the next line starts below the image");
+          } catch (javax.swing.text.BadLocationException e) {
+            throw new IllegalStateException(e);
+          }
+        });
+  }
+
+  @Test
+  void lineWidthCentresTheTextInAWideWindow() throws Exception {
+    SwingUtilities.invokeAndWait(
+        () -> {
+          NoteEditor editor = new NoteEditor("x");
+          editor.fitWidth(2000, 60);
+          int pad = editor.getInsets().left;
+          assertTrue(pad > 300, "wide window, narrow column");
+          assertEquals(pad, editor.getInsets().right);
+
+          editor.fitWidth(2000, 0);
+          assertEquals(18, editor.getInsets().left, "full width keeps the normal padding");
+          editor.fitWidth(300, 60);
+          assertEquals(18, editor.getInsets().left, "never narrower than the normal padding");
+        });
+  }
+
   private static Theme withSize(Theme t, int size) {
     return new Theme(
         t.bg(), t.fg(), t.caret(), t.codeColor(), t.fontFamily(), size, t.title(), t.alwaysOnTop());

@@ -10,6 +10,10 @@ import org.junit.jupiter.api.Test;
 
 class SaveStatusTest {
 
+  static {
+    Messages.useLanguage("en");
+  }
+
   private final AtomicReference<String> title = new AtomicReference<>();
   private final List<Exception> alerts = new ArrayList<>();
   private final SaveStatus status = new SaveStatus(title::set, alerts::add, "Notes");
@@ -21,7 +25,7 @@ class SaveStatusTest {
     status.update(diskFull);
     status.update(diskFull);
 
-    assertEquals(SaveStatus.WARNING + "Notes", title.get());
+    assertEquals(SaveStatus.warning() + "Notes", title.get());
     assertEquals(List.of(diskFull), alerts);
   }
 
@@ -41,6 +45,6 @@ class SaveStatusTest {
 
     status.setTitle("My notes");
 
-    assertEquals(SaveStatus.WARNING + "My notes", title.get());
+    assertEquals(SaveStatus.warning() + "My notes", title.get());
   }
 }

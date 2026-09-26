@@ -6,7 +6,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import javax.swing.event.MouseInputAdapter;
-import javax.swing.text.StyledDocument;
 
 /** Selection grip drag-resize, double-click-to-open and the context menu for inline images. */
 class ImageMouse extends MouseInputAdapter {
@@ -73,7 +72,16 @@ class ImageMouse extends MouseInputAdapter {
   public void mouseMoved(MouseEvent e) {
     int selected = pane.selectedImage();
     boolean grip = selected >= 0 && onGrip(selected, e.getPoint());
-    pane.setCursor(Cursor.getPredefinedCursor(grip ? Cursor.SE_RESIZE_CURSOR : Cursor.TEXT_CURSOR));
+    pane.setCursor(Cursor.getPredefinedCursor(grip ? Cursor.SE_RESIZE_CURSOR : cursorFor(e)));
+  }
+
+  /** A hand over a checkbox, and over a link while Cmd/Ctrl is held; the text cursor otherwise. */
+  private int cursorFor(MouseEvent e) {
+    boolean modifier = (e.getModifiersEx() & ShortcutMask.menu()) != 0;
+    boolean link =
+        modifier && EditorDecorations.linkAt(pane, pane.viewToModel2D(e.getPoint())) != null;
+    boolean box = EditorCheckboxes.at(pane, e.getPoint()) >= 0;
+    return link || box ? Cursor.HAND_CURSOR : Cursor.TEXT_CURSOR;
   }
 
   private void menu(MouseEvent e) {
@@ -90,18 +98,7 @@ class ImageMouse extends MouseInputAdapter {
   }
 
   private int imageAt(Point p) {
-    int offset = pane.viewToModel2D(p);
-    if (isImage(offset)) {
-      return offset;
-    }
-    return isImage(offset - 1) ? offset - 1 : -1;
-  }
-
-  private boolean isImage(int offset) {
-    StyledDocument doc = pane.getStyledDocument();
-    return offset >= 0
-        && offset < doc.getLength()
-        && ImageAttr.isImage(ImageActions.attrs(pane, offset));
+    return ImageActions.imageAt(pane, p);
   }
 
   private void setDrag(boolean enabled) {

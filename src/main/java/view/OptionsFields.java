@@ -1,5 +1,7 @@
 package view;
 
+import static view.Messages.tr;
+
 import java.awt.Color;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -14,7 +16,7 @@ final class OptionsFields {
   private final JComboBox<String> fontBox = new JComboBox<>(FontFamilies.all());
   private final JSpinner sizeSpin = Spinners.intRange(12, 6, 72);
   private final JTextField titleField = new JTextField();
-  private final JCheckBox alwaysOnTop = new JCheckBox("Always on top", true);
+  private final JCheckBox alwaysOnTop = new JCheckBox(tr("options.alwaysOnTop"), true);
 
   OptionsFields(Runnable onChange) {
     fontBox.addActionListener(e -> onChange.run());

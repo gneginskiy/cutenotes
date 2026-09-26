@@ -49,6 +49,8 @@ final class FlatButton extends JButton {
     setBorder(BorderFactory.createEmptyBorder(5, 6, 5, 6));
     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     setToolTipText(tooltip);
+    // icon-only buttons are named by their tooltip for screen readers
+    getAccessibleContext().setAccessibleName(text != null ? text : tooltip);
     addActionListener(e -> action.run());
   }
 

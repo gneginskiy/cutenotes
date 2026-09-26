@@ -15,9 +15,16 @@ public class TabsPane {
   private final JPanel inner = new JPanel(new BorderLayout());
   private final TabCards cards = new TabCards();
   private final OpenTabs tabs = new OpenTabs();
-  private final TabStrip tabStrip = new TabStrip(this::select, tabs::rename, tabs::reorder, root);
+  private final TabStrip tabStrip =
+      new TabStrip(
+          this::select,
+          (id, name) -> this.identity.renamedByUser(id, name),
+          tabs::reorder,
+          id -> this.identity.metas().get(id).color(),
+          (id, color) -> this.identity.setColor(id, color),
+          root);
   private final TabHeader header = tabStrip.header();
-  private final TabHistory history = new TabHistory();
+  private final TabIdentity identity = new TabIdentity(tabs, header);
   private final NoteEditor defaultArea = cards.defaultArea();
 
   public TabsPane() {
@@ -39,17 +46,14 @@ public class TabsPane {
     return tabs.activeId();
   }
 
+  /** Names and colours of the tabs, and the per-note settings behind them. */
+  TabIdentity identity() {
+    return identity;
+  }
+
   public void addBelowHeader(JComponent c) {
     inner.add(c, BorderLayout.NORTH);
     inner.revalidate();
-  }
-
-  public Revealer revealer() {
-    return tabStrip.revealer();
-  }
-
-  public boolean pinned() {
-    return tabStrip.pinned();
   }
 
   public List<String> openIds() {
@@ -78,22 +82,19 @@ public class TabsPane {
     cards.add(pane, id);
     header.addTab(id, name);
     tabs.add(id, new TabState(name, area, pane));
+    identity.opened(id, name, area);
     select(id);
-  }
-
-  public Tab closeCurrent() {
-    return close(tabs.activeId());
   }
 
   /** Closes the tab with {@code id} (active or not); returns its final state, or null. */
   Tab close(String id) {
     boolean wasActive = id != null && id.equals(tabs.activeId());
     int idx = tabs.indexOf(id);
+    identity.closing(id);
     TabState s = tabs.remove(id);
     if (s == null) {
       return null;
     }
-    history.record(id);
     cards.remove(s.pane);
     header.removeTab(id);
     String neighbour = tabs.neighbourOf(idx);
@@ -107,15 +108,26 @@ public class TabsPane {
   }
 
   public String popLastClosed() {
-    return history.popReopenable(tabs.ids());
+    return tabs.popReopenable();
   }
 
-  public void selectNext() {
-    select(tabs.next());
+  /** The next (1) or previous (-1) tab, wrapping around. */
+  void selectRelative(int step) {
+    select(step > 0 ? tabs.next() : tabs.previous());
+  }
+
+  /** Selects the tab at {@code index} (0-based); -1 means the last tab. */
+  void selectPosition(int index) {
+    select(tabs.atPosition(index));
   }
 
   public NoteEditor activeArea() {
-    TabState s = tabs.get(tabs.activeId());
+    return areaOf(tabs.activeId());
+  }
+
+  /** The editor of a tab; the scratch area for an id that is not open. */
+  NoteEditor areaOf(String id) {
+    TabState s = id == null ? null : tabs.get(id);
     return s == null ? defaultArea : s.area;
   }
 

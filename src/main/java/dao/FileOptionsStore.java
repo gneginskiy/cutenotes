@@ -1,13 +1,10 @@
 package dao;
 
 import java.awt.Color;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 
-import lombok.SneakyThrows;
 import model.Theme;
 
 public class FileOptionsStore implements OptionsStore {
@@ -32,19 +29,18 @@ public class FileOptionsStore implements OptionsStore {
   }
 
   @Override
-  @SneakyThrows
   public Theme load() {
     if (!Files.exists(file)) {
       return Theme.DEFAULT;
     }
-    Map<String, String> m = parse(Files.readString(file, StandardCharsets.UTF_8));
+    Map<String, String> m = KeyValueFile.read(file);
     return new Theme(
         parseColor(m.get(BG), Theme.DEFAULT.bg()),
         parseColor(m.get(FG), Theme.DEFAULT.fg()),
         m.containsKey(CARET) ? parseColor(m.get(CARET), null) : null,
         parseColor(m.get(CODE), Theme.DEFAULT.codeColor()),
         m.getOrDefault(FONT, Theme.DEFAULT.fontFamily()),
-        parseInt(m.get(SIZE), Theme.DEFAULT.fontSize()),
+        KeyValueFile.intOr(m.get(SIZE), Theme.DEFAULT.fontSize()),
         m.get(TITLE),
         !"false".equalsIgnoreCase(m.get(ALWAYS_ON_TOP)));
   }
@@ -69,17 +65,6 @@ public class FileOptionsStore implements OptionsStore {
     AtomicFiles.write(file, text.toString());
   }
 
-  private static Map<String, String> parse(String content) {
-    Map<String, String> m = new HashMap<>();
-    for (String line : content.split("\\R")) {
-      int eq = line.indexOf('=');
-      if (eq > 0) {
-        m.put(line.substring(0, eq).trim(), line.substring(eq + 1).trim());
-      }
-    }
-    return m;
-  }
-
   @SuppressWarnings("PMD")
   private static Color parseColor(String hex, Color fallback) {
     if (hex == null) {
@@ -87,17 +72,6 @@ public class FileOptionsStore implements OptionsStore {
     }
     try {
       return Color.decode(hex);
-    } catch (NumberFormatException e) {
-      return fallback;
-    }
-  }
-
-  private static int parseInt(String s, int fallback) {
-    if (s == null) {
-      return fallback;
-    }
-    try {
-      return Integer.parseInt(s);
     } catch (NumberFormatException e) {
       return fallback;
     }

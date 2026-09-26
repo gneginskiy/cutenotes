@@ -24,8 +24,7 @@ final class ImageAttr {
     int w = Math.max(1, width);
     int h = Math.max(1, height);
     SimpleAttributeSet attrs = new SimpleAttributeSet();
-    StyleConstants.setIcon(
-        attrs, new ImageIcon(source.getScaledInstance(w, h, Image.SCALE_SMOOTH)));
+    StyleConstants.setIcon(attrs, new ImageIcon(ImageScaler.forDisplay(source, w, h)));
     attrs.addAttribute(PATH, path);
     attrs.addAttribute(SOURCE, source);
     attrs.addAttribute(WIDTH, w);

@@ -1,8 +1,11 @@
 package view;
 
 import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyledDocument;
 
 import lombok.SneakyThrows;
@@ -59,6 +62,29 @@ final class EditorClipboard {
     } else {
       toClipboard(plainFallback);
     }
+  }
+
+  /**
+   * Pastes the clipboard's text literally and unformatted: no Markdown or image parsing, and the
+   * formatting at the caret is not carried over.
+   */
+  @SneakyThrows
+  static void pastePlain(JTextComponent area) {
+    Transferable clip = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
+    if (clip == null || !clip.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+      return;
+    }
+    String text = (String) clip.getTransferData(DataFlavor.stringFlavor);
+    insertPlain(area, text);
+  }
+
+  @SneakyThrows
+  static void insertPlain(JTextComponent area, String text) {
+    StyledDocument doc = (StyledDocument) area.getDocument();
+    int start = area.getSelectionStart();
+    doc.remove(start, area.getSelectionEnd() - start);
+    doc.insertString(start, text, new SimpleAttributeSet());
+    area.setCaretPosition(start + text.length());
   }
 
   private static void toClipboard(String value) {

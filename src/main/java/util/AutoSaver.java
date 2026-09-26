@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 
 import dao.SessionStore;
 import dao.TabRepository;
+import lombok.RequiredArgsConstructor;
 import model.Tab;
 
 /**
@@ -19,6 +20,7 @@ import model.Tab;
  * taken outside the lock (it may block on the EDT); writes are serialised so a scheduled tick, an
  * exit flush and a deletion never interleave on the same file.
  */
+@RequiredArgsConstructor
 public class AutoSaver {
 
   private static final long INTERVAL_MS = 300;
@@ -39,17 +41,6 @@ public class AutoSaver {
     this(snapshotSupplier, repo, null, SaveListener.NONE);
   }
 
-  public AutoSaver(
-      Supplier<List<Tab>> snapshotSupplier,
-      TabRepository repo,
-      SessionStore sessions,
-      SaveListener listener) {
-    this.snapshotSupplier = snapshotSupplier;
-    this.repo = repo;
-    this.sessions = sessions;
-    this.listener = listener;
-  }
-
   public void start() {
     scheduler.scheduleWithFixedDelay(this::tick, INTERVAL_MS, INTERVAL_MS, TimeUnit.MILLISECONDS);
   }
@@ -62,6 +53,11 @@ public class AutoSaver {
   public synchronized void markSaved(Tab tab) {
     lastSaved.put(tab.id(), tab);
     discarded.remove(tab.id());
+  }
+
+  /** The note as the app last wrote or read it; {@code null} if unknown. */
+  public synchronized Tab lastSaved(String id) {
+    return lastSaved.get(id);
   }
 
   /** Forgets a deleted note, so a snapshot taken just before the deletion cannot resurrect it. */

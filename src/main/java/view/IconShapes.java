@@ -22,6 +22,11 @@ final class IconShapes {
       case PIN, PIN_ON -> join(pinBody(), line(5, 2.5f, 11, 2.5f), line(8, 9.5f, 8, 14));
       case NOTE -> join(noteBody(), line(9.5f, 2.5f, 9.5f, 5.5f, 12.5f, 5.5f));
       case FOLDER -> folderBody();
+      case TRASH ->
+          join(
+              line(2.5f, 4.5f, 13.5f, 4.5f),
+              line(6.5f, 4.5f, 6.5f, 2.5f, 9.5f, 2.5f, 9.5f, 4.5f),
+              line(4, 4.5f, 5, 13.5f, 11, 13.5f, 12, 4.5f));
     };
   }
 

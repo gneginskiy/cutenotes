@@ -23,6 +23,8 @@ class AutoSaverTest {
 
     assertEquals("AA", repo.byId.get("a").content());
     assertEquals("BB", repo.byId.get("b").content());
+    assertEquals("AA", saver.lastSaved("a").content());
+    assertEquals(null, saver.lastSaved("c"));
   }
 
   @Test

@@ -24,12 +24,13 @@ class TabsPaneTest {
           tabs.openTab("X", "x", "hello");
           assertEquals(1, tabs.openIds().size());
 
-          Tab closed = tabs.closeCurrent();
+          Tab closed = tabs.close(tabs.activeId());
 
           assertNotNull(closed);
           assertEquals("X", closed.id());
           assertTrue(tabs.openIds().isEmpty());
-          assertEquals(0, tabs.closeCurrent() == null ? 0 : 1, "second close should be a no-op");
+          assertEquals(
+              0, tabs.close(tabs.activeId()) == null ? 0 : 1, "second close should be a no-op");
         });
   }
 }

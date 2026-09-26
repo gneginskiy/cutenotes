@@ -6,21 +6,19 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 import javax.imageio.ImageIO;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyledDocument;
 
 import dao.DataDir;
+import dao.ImageStore;
 import lombok.SneakyThrows;
 
 /** Saves pasted images next to the notes and inserts them inline as resizable icons. */
 final class NoteImages {
 
-  private static final String DIR = "images";
   private static final int MAX_WIDTH = 420;
 
   private NoteImages() {}
@@ -33,7 +31,7 @@ final class NoteImages {
       return;
     }
     if (clip.isDataFlavorSupported(DataFlavor.imageFlavor)) {
-      insert(pane, toBuffered((Image) clip.getTransferData(DataFlavor.imageFlavor)));
+      insert(pane, ImageScaler.toBuffered((Image) clip.getTransferData(DataFlavor.imageFlavor)));
       return;
     }
     String text =
@@ -65,32 +63,21 @@ final class NoteImages {
     return Math.max(1, ((BufferedImage) image).getHeight() * width / Math.max(1, natural));
   }
 
+  /** The image behind a note's path; {@code null} if missing or outside the images folder. */
   static BufferedImage load(String path) {
+    Path file = store().resolve(path);
     try {
-      return ImageIO.read(DataDir.resolve().resolve(path).toFile());
+      return file == null ? null : ImageIO.read(file.toFile());
     } catch (IOException e) {
       return null;
     }
   }
 
-  @SneakyThrows
-  private static String save(BufferedImage image) {
-    Path dir = DataDir.resolve().resolve(DIR);
-    Files.createDirectories(dir);
-    String name = "img_" + UUID.randomUUID() + ".png";
-    ImageIO.write(image, "png", dir.resolve(name).toFile());
-    return DIR + "/" + name;
+  static ImageStore store() {
+    return new ImageStore(DataDir.resolve());
   }
 
-  private static BufferedImage toBuffered(Image image) {
-    if (image instanceof BufferedImage buffered) {
-      return buffered;
-    }
-    BufferedImage copy =
-        new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-    var g = copy.createGraphics();
-    g.drawImage(image, 0, 0, null);
-    g.dispose();
-    return copy;
+  private static String save(BufferedImage image) {
+    return store().save(image);
   }
 }
