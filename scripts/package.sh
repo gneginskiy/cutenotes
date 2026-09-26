@@ -55,11 +55,14 @@ VERSION="$(echo "$DAY" | awk -F- '{printf "%d.%d.%d", $1 - 2000, $2, $3}')"
 # The icon, drawn by the app itself.
 JAVA="${JAVA_HOME:+$JAVA_HOME/bin/}java"
 JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
-SEP=":"
-[[ "$PLATFORM" == windows-* ]] && SEP=";"
 mkdir -p "$WORK/icon-tool"
 "$JAVAC" -d "$WORK/icon-tool" -cp "$JAR" "$ROOT/scripts/icons/IconFiles.java"
-"$JAVA" -Djava.awt.headless=true -cp "$JAR$SEP$WORK/icon-tool" IconFiles "$WORK/icons"
+# A class path of two entries: Git Bash on Windows converts single paths, not ";"-joined lists.
+ICON_CP="$JAR:$WORK/icon-tool"
+if [[ "$PLATFORM" == windows-* ]]; then
+  ICON_CP="$(cygpath -w "$JAR");$(cygpath -w "$WORK/icon-tool")"
+fi
+"$JAVA" -Djava.awt.headless=true -cp "$ICON_CP" IconFiles "$WORK/icons"
 case "$PLATFORM" in
   mac-*)
     iconutil -c icns "$WORK/icons/cuteNotes.iconset" -o "$WORK/icons/cuteNotes.icns"

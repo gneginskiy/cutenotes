@@ -20,7 +20,8 @@ case "$(basename "$ARCHIVE")" in
     ditto -x -k "$ARCHIVE" "$TMP"
     RUN=("$TMP/cuteNotes.app/Contents/MacOS/cuteNotes") ;;
   *windows*)
-    7z x -bso0 -bsp0 "-o$TMP" "$ARCHIVE"
+    # 7-Zip is a Windows program: "-o<dir>" is not a path Git Bash converts by itself.
+    7z x -bso0 -bsp0 "-o$(cygpath -w "$TMP")" "$ARCHIVE"
     RUN=("$TMP/cuteNotes/cuteNotes.exe") ;;
   *) echo "Unknown package: $ARCHIVE" >&2; exit 1 ;;
 esac
